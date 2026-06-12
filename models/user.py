@@ -3,11 +3,12 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
+from core.enums import pg_enum
 from models.mixins import TenantScopedMixin
 
 if TYPE_CHECKING:
@@ -37,7 +38,7 @@ class User(TenantScopedMixin, Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, name="user_role"),
+        pg_enum(UserRole, "user_role"),
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

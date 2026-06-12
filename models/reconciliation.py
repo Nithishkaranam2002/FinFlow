@@ -4,11 +4,12 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, Float, ForeignKey, Index, Numeric, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
+from core.enums import pg_enum
 
 if TYPE_CHECKING:
     from models.invoice import Invoice
@@ -44,7 +45,7 @@ class BankStatement(Base):
     source_format: Mapped[str] = mapped_column(String(32), nullable=False)
     statement_date: Mapped[date | None] = mapped_column(Date)
     status: Mapped[StatementStatus] = mapped_column(
-        Enum(StatementStatus, name="statement_status"),
+        pg_enum(StatementStatus, "statement_status"),
         default=StatementStatus.PROCESSING,
         nullable=False,
     )
@@ -127,7 +128,7 @@ class ReconciliationMatch(Base):
         UUID(as_uuid=True), ForeignKey("payments.id")
     )
     match_type: Mapped[MatchType] = mapped_column(
-        Enum(MatchType, name="match_type"),
+        pg_enum(MatchType, "match_type"),
         default=MatchType.UNMATCHED,
         nullable=False,
     )

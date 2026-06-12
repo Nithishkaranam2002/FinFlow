@@ -4,11 +4,12 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Date, DateTime, Enum, Float, ForeignKey, Index, Numeric, String, func
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Index, Numeric, String, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
+from core.enums import pg_enum
 
 if TYPE_CHECKING:
     from models.payment import Payment
@@ -50,7 +51,7 @@ class Invoice(Base):
         JSONB, default=list, nullable=False
     )
     status: Mapped[InvoiceStatus] = mapped_column(
-        Enum(InvoiceStatus, name="invoice_status"),
+        pg_enum(InvoiceStatus, "invoice_status"),
         default=InvoiceStatus.RECEIVED,
         nullable=False,
     )

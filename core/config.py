@@ -39,9 +39,9 @@ class Settings(BaseSettings):
 
     # LiteLLM
     litellm_master_key: str = "sk-finflow-master"
-    primary_model: str = "claude-3-5-haiku-20241022"
-    standard_model: str = "claude-3-5-sonnet-20241022"
-    premium_model: str = "claude-opus-4-5-20251101"
+    primary_model: str = "gpt-4o-mini"
+    standard_model: str = "gpt-4o-mini"
+    premium_model: str = "gpt-4o"
     fallback_model: str = "gpt-4o-mini"
 
     # Langfuse observability

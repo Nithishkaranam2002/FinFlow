@@ -17,6 +17,7 @@ from agents.base import BaseAgent
 from agents.state import FinFlowState
 from core.database import async_session_factory
 from core.kafka import TOPIC_INVOICE_EXTRACTED, kafka_producer_manager
+from core.llm_gateway import VISION_MODEL
 from core.observability import extract_trace_ids, get_langfuse_client, trace_agent_step
 from langfuse import propagate_attributes
 from models.invoice import Invoice, InvoiceStatus
@@ -31,7 +32,6 @@ from services.mem0_corrections import fetch_vendor_correction_examples
 
 logger = structlog.get_logger(__name__)
 
-VISION_MODEL = "claude-3-5-sonnet-20241022"
 EXTRACTION_CONFIDENCE_THRESHOLD = 0.75
 CONFIDENCE_WEIGHTS = {
     "total_amount": 0.30,

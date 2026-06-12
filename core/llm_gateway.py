@@ -30,12 +30,11 @@ TIER_FAST = "fast"
 TIER_STANDARD = "standard"
 TIER_PREMIUM = "premium"
 
-FAST_MODEL = "claude-3-5-haiku-20241022"
-STANDARD_MODEL = "claude-3-5-sonnet-20241022"
-PREMIUM_MODEL = "claude-opus-4-5-20251101"
-FAST_FALLBACK = "gpt-4o-mini"
-STANDARD_FALLBACK = "gpt-4o"
-PREMIUM_FALLBACK = "gpt-4o"
+# OpenAI-only model tiers (override via PRIMARY_MODEL / STANDARD_MODEL / PREMIUM_MODEL in .env)
+FAST_MODEL = "gpt-4o-mini"
+STANDARD_MODEL = "gpt-4o-mini"
+PREMIUM_MODEL = "gpt-4o"
+VISION_MODEL = PREMIUM_MODEL  # vision extraction always uses gpt-4o
 
 SEMANTIC_CACHE_THRESHOLD = 0.97
 SEMANTIC_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30
@@ -60,17 +59,19 @@ def route_by_complexity(task_type: str, context: dict[str, Any]) -> str:
     Return LiteLLM router tier alias: fast | standard | premium.
 
     Rules:
-    - extraction with known vendor confidence > 0.9 -> fast
-    - first-time vendor extraction or any vision task -> standard
-    - fraud_judgment, reconciliation_llm_pass, risk_score > 0.5 -> premium
+    - vision_extraction or is_vision -> premium (gpt-4o)
+    - extraction with known vendor confidence > 0.9 -> fast (gpt-4o-mini)
+    - first-time vendor extraction -> standard (gpt-4o-mini)
+    - fraud_judgment, reconciliation_llm_pass, risk_score > 0.5 -> premium (gpt-4o)
     """
     risk_score = float(context.get("risk_score") or context.get("overall_risk_score") or 0.0)
     if task_type in {"fraud_judgment", "reconciliation_llm_pass"} or risk_score > 0.5:
         return TIER_PREMIUM
 
-    if task_type in {"vision_extraction", "extraction"}:
-        if context.get("is_vision") or context.get("first_time_vendor"):
-            return TIER_STANDARD
+    if task_type == "vision_extraction" or context.get("is_vision"):
+        return TIER_PREMIUM
+
+    if task_type in {"extraction"}:
         vendor_confidence = float(context.get("vendor_confidence_hint") or 0.0)
         if vendor_confidence > 0.9 and context.get("known_vendor"):
             return TIER_FAST
@@ -83,36 +84,39 @@ def route_by_complexity(task_type: str, context: dict[str, Any]) -> str:
 
 
 def _build_model_list(settings: Settings) -> list[dict[str, Any]]:
-    anthropic_key = settings.anthropic_api_key or None
     openai_key = settings.openai_api_key or None
 
-    def entry(tier: str, model: str, api_key: str | None) -> dict[str, Any]:
-        provider = "anthropic" if model.startswith("claude") else "openai"
-        litellm_model = f"{provider}/{model}" if provider == "anthropic" else model
-        params: dict[str, Any] = {"model": litellm_model}
-        if api_key:
-            params["api_key"] = api_key
+    def entry(tier: str, model: str) -> dict[str, Any]:
+        params: dict[str, Any] = {"model": model}
+        if openai_key:
+            params["api_key"] = openai_key
         return {"model_name": tier, "litellm_params": params}
 
     return [
-        entry(TIER_FAST, settings.primary_model or FAST_MODEL, anthropic_key),
-        entry("fast-fallback", FAST_FALLBACK, openai_key),
-        entry(TIER_STANDARD, settings.standard_model or STANDARD_MODEL, anthropic_key),
-        entry("standard-fallback", STANDARD_FALLBACK, openai_key),
-        entry(TIER_PREMIUM, settings.premium_model or PREMIUM_MODEL, anthropic_key),
-        entry("premium-fallback", PREMIUM_FALLBACK, openai_key),
+        entry(TIER_FAST, settings.primary_model or FAST_MODEL),
+        entry(TIER_STANDARD, settings.standard_model or STANDARD_MODEL),
+        entry(TIER_PREMIUM, settings.premium_model or PREMIUM_MODEL),
     ]
 
 
 def _build_router(settings: Settings) -> Router:
-    fallbacks = [
-        {TIER_FAST: ["fast-fallback"]},
-        {TIER_STANDARD: ["standard-fallback"]},
-        {TIER_PREMIUM: ["premium-fallback"]},
-    ]
+    # Anthropic fallback chain (re-enable when ANTHROPIC_API_KEY is set):
+    #   anthropic_key = settings.anthropic_api_key or None
+    #   def anthropic_entry(tier: str, model: str) -> dict:
+    #       return {"model_name": tier, "litellm_params": {
+    #           "model": f"anthropic/{model}", "api_key": anthropic_key}}
+    #   fallbacks = [
+    #       {TIER_FAST: ["fast-fallback"]},
+    #       {TIER_STANDARD: ["standard-fallback"]},
+    #       {TIER_PREMIUM: ["premium-fallback"]},
+    #   ]
+    #   model_list = [
+    #       anthropic_entry(TIER_FAST, "claude-3-5-haiku-20241022"),
+    #       entry("fast-fallback", "gpt-4o-mini"),
+    #       ...
+    #   ]
     return Router(
         model_list=_build_model_list(settings),
-        fallbacks=fallbacks,
         num_retries=2,
         timeout=120,
     )

@@ -4,11 +4,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Numeric, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
+from core.enums import pg_enum
 
 if TYPE_CHECKING:
     from models.invoice import Invoice
@@ -39,7 +40,7 @@ class Payment(Base):
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
     status: Mapped[PaymentStatus] = mapped_column(
-        Enum(PaymentStatus, name="payment_status"),
+        pg_enum(PaymentStatus, "payment_status"),
         default=PaymentStatus.SCHEDULED,
         nullable=False,
     )
