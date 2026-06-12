@@ -15,6 +15,10 @@ class DocumentPreparationError(Exception):
     """Raised when a document cannot be prepared for vision extraction."""
 
 
+class ExtractionError(Exception):
+    """Raised when invoice extraction fails."""
+
+
 def prepare_document_for_vision(file_bytes: bytes, file_type: str) -> tuple[bytes, str]:
     """
     Normalize uploaded documents into a vision-model-ready image.
@@ -81,4 +85,7 @@ async def extract_invoice(payload: dict[str, Any]) -> tuple[dict[str, Any], floa
     """
     from agents.ingestion_agent import extract_from_kafka_payload
 
-    return await extract_from_kafka_payload(payload)
+    try:
+        return await extract_from_kafka_payload(payload)
+    except (DocumentPreparationError, ValueError) as exc:
+        raise ExtractionError(str(exc)) from exc

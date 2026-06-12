@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import json
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -15,15 +16,104 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import async_session_factory
+from core.security import get_password_hash
 from models.invoice import Invoice, InvoiceStatus
 from models.payment import Payment
 from models.reconciliation import MatchType, ReconciliationMatch
 from models.tenant import Tenant
-from models.user import User
+from models.user import User, UserRole
 from models.vendor import Vendor
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "synthetic_data.json"
+TEST_USER_PASSWORD = "Test1234!"
+
+ACME_CORP_USER_EMAILS: dict[UserRole, str] = {
+    UserRole.AP_CLERK: "clerk@acmecorp.com",
+    UserRole.APPROVER: "approver@acmecorp.com",
+    UserRole.CONTROLLER: "controller@acmecorp.com",
+    UserRole.AUDITOR: "auditor@acmecorp.com",
+}
+
+ROLE_EMAIL_PREFIX: dict[UserRole, str] = {
+    UserRole.AP_CLERK: "clerk",
+    UserRole.APPROVER: "approver",
+    UserRole.CONTROLLER: "controller",
+    UserRole.AUDITOR: "auditor",
+}
+
+
+@dataclass(frozen=True)
+class TestUserCredential:
+    tenant_name: str
+    email: str
+    password: str
+    role: str
+
+
+def test_user_email(tenant_name: str, slug: str, role: UserRole) -> str:
+    if tenant_name == "Acme Corp":
+        return ACME_CORP_USER_EMAILS[role]
+    domain = slug.replace("-", "")
+    return f"{ROLE_EMAIL_PREFIX[role]}@{domain}.com"
+
+
+def print_test_users_table(users: list[TestUserCredential]) -> None:
+    headers = ("Tenant", "Email", "Password", "Role")
+    rows = [
+        (user.tenant_name, user.email, user.password, user.role) for user in users
+    ]
+    widths = [
+        max(len(headers[i]), *(len(row[i]) for row in rows))
+        for i in range(len(headers))
+    ]
+
+    def format_row(cells: tuple[str, ...]) -> str:
+        return "  ".join(cell.ljust(widths[i]) for i, cell in enumerate(cells))
+
+    print("=" * 80)
+    print("Test Users (local development only)")
+    print("=" * 80)
+    print(format_row(headers))
+    print(format_row(tuple("-" * width for width in widths)))
+    for row in rows:
+        print(format_row(row))
+    print("=" * 80)
+
+
+async def seed_test_users(
+    session: AsyncSession, tenants: list[dict]
+) -> list[TestUserCredential]:
+    password_hash = get_password_hash(TEST_USER_PASSWORD)
+    credentials: list[TestUserCredential] = []
+
+    for row in tenants:
+        tenant_name = row["name"]
+        tenant_id = uuid.UUID(row["id"])
+        slug = row["slug"]
+
+        for role in UserRole:
+            email = test_user_email(tenant_name, slug, role)
+            session.add(
+                User(
+                    tenant_id=tenant_id,
+                    email=email,
+                    hashed_password=password_hash,
+                    role=role,
+                    is_active=True,
+                )
+            )
+            credentials.append(
+                TestUserCredential(
+                    tenant_name=tenant_name,
+                    email=email,
+                    password=TEST_USER_PASSWORD,
+                    role=role.value,
+                )
+            )
+
+    await session.flush()
+    return credentials
 
 
 def parse_date(value: str | None) -> date | None:
@@ -55,11 +145,20 @@ async def clear_tenant_scoped_data(
     await session.commit()
 
 
-async def seed_database(data_path: Path, reset: bool) -> dict[str, int]:
+async def seed_database(
+    data_path: Path, reset: bool
+) -> tuple[dict[str, int], list[TestUserCredential]]:
     with data_path.open(encoding="utf-8") as handle:
         payload = json.load(handle)
 
-    counts = {"tenants": 0, "vendors": 0, "invoices": 0, "reconciliation_matches": 0}
+    counts = {
+        "tenants": 0,
+        "vendors": 0,
+        "test_users": 0,
+        "invoices": 0,
+        "reconciliation_matches": 0,
+    }
+    test_users: list[TestUserCredential] = []
 
     tenant_ids = [uuid.UUID(t["id"]) for t in payload["tenants"]]
 
@@ -110,6 +209,9 @@ async def seed_database(data_path: Path, reset: bool) -> dict[str, int]:
             counts["vendors"] += 1
 
         await session.flush()
+
+        test_users = await seed_test_users(session, payload["tenants"])
+        counts["test_users"] = len(test_users)
 
         vendor_invoice_counts: dict[uuid.UUID, int] = {}
         vendor_paid_totals: dict[uuid.UUID, Decimal] = {}
@@ -200,7 +302,7 @@ async def seed_database(data_path: Path, reset: bool) -> dict[str, int]:
 
         await session.commit()
 
-    return counts
+    return counts, test_users
 
 
 def main() -> None:
@@ -224,7 +326,7 @@ def main() -> None:
             "Run: uv run python scripts/generate_synthetic_data.py"
         )
 
-    counts = asyncio.run(seed_database(args.data, reset=args.reset))
+    counts, test_users = asyncio.run(seed_database(args.data, reset=args.reset))
 
     print("=" * 60)
     print("FinFlow Database Seeded")
@@ -232,6 +334,8 @@ def main() -> None:
     for entity, count in counts.items():
         print(f"  {entity}: {count}")
     print("=" * 60)
+    print()
+    print_test_users_table(test_users)
 
 
 if __name__ == "__main__":

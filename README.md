@@ -33,16 +33,24 @@ make frontend
 
 | Command | Description |
 |---------|-------------|
-| `make up` | Start all Docker services in the background |
+| `make up` | Start all Docker services (API, workers, infra) in the background |
 | `make down` | Stop all Docker services |
 | `make logs` | Tail logs from the API container |
+| `make logs-workers` | Tail logs from invoice and reconciliation workers |
 | `make migrate` | Run `alembic upgrade head` inside the API container |
 | `make seed` | Generate synthetic data and seed PostgreSQL |
 | `make frontend` | Install deps and run Vite on port 5173 |
 | `make test` | Run pytest inside the API container |
-| `make fresh` | Full reset: remove volumes, start stack, migrate, seed |
+| `make fresh` | Full reset: remove volumes, start full stack (incl. workers), migrate, seed |
 
 **Note:** If you already run Postgres or Redis locally, FinFlow maps them to host ports **5434** (Postgres) and **6380** (Redis) to avoid conflicts. Inside Docker, services still connect on the standard internal ports.
+
+### Rebuild workers only (no migrate/seed)
+
+```bash
+docker compose up -d --build invoice-worker reconciliation-worker
+docker compose logs -f invoice-worker reconciliation-worker
+```
 
 ## Stack
 

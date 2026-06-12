@@ -1,9 +1,11 @@
 COMPOSE := docker compose
 API_SERVICE := api
 API_CONTAINER := finflow-api
+WORKER_SERVICES := invoice-worker reconciliation-worker
 
-.PHONY: up down logs seed migrate frontend test fresh wait-api
+.PHONY: up down logs logs-workers seed migrate frontend test fresh wait-api
 
+# Starts the full stack: infra, API, and Kafka workers (no compose profiles).
 up:
 	$(COMPOSE) up -d
 
@@ -12,6 +14,9 @@ down:
 
 logs:
 	$(COMPOSE) logs -f $(API_SERVICE)
+
+logs-workers:
+	$(COMPOSE) logs -f $(WORKER_SERVICES)
 
 migrate:
 	$(COMPOSE) exec $(API_SERVICE) uv run alembic upgrade head

@@ -18,8 +18,10 @@ export async function login(email: string, password: string) {
   return data
 }
 
-export async function fetchMe() {
-  const { data } = await apiClient.get('/auth/me')
+export async function fetchMe(token?: string) {
+  const { data } = await apiClient.get('/auth/me', {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
   return data
 }
 

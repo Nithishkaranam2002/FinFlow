@@ -2,13 +2,13 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2, LockKeyhole } from 'lucide-react'
+import { isAxiosError } from 'axios'
 import { fetchMe, login } from '../api/invoices'
 import { useAuthStore } from '../store/authStore'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
-  const setToken = useAuthStore((s) => s.setToken)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -20,13 +20,24 @@ export function LoginPage() {
     setLoading(true)
 
     try {
-      const tokenResponse = await login(email, password)
-      setToken(tokenResponse.access_token)
-      const user = await fetchMe()
+      const tokenResponse = await login(email.trim(), password)
+      const user = await fetchMe(tokenResponse.access_token)
       setAuth(tokenResponse.access_token, user)
       navigate('/')
-    } catch {
-      setError('Invalid email or password. Please try again.')
+    } catch (err) {
+      if (isAxiosError(err)) {
+        const status = err.response?.status
+        const detail = err.response?.data?.detail
+        if (status === 401) {
+          setError('Invalid email or password. Please try again.')
+        } else if (typeof detail === 'string') {
+          setError(detail)
+        } else {
+          setError('Unable to sign in. Check that the API is running on port 8000.')
+        }
+      } else {
+        setError('Unable to sign in. Check that the API is running on port 8000.')
+      }
     } finally {
       setLoading(false)
     }
@@ -84,6 +95,17 @@ export function LoginPage() {
             Sign in
           </button>
         </form>
+
+        {import.meta.env.DEV ? (
+          <div className="mt-6 rounded-lg border border-dashed border-border bg-slate-50 p-4 text-xs text-muted">
+            <p className="font-medium text-slate-700">Local dev credentials</p>
+            <p className="mt-1">
+              <span className="font-mono text-slate-800">controller@acmecorp.com</span>
+              {' / '}
+              <span className="font-mono text-slate-800">Test1234!</span>
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   )

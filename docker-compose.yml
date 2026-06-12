@@ -244,6 +244,55 @@ services:
           cpus: "0.25"
           memory: 512M
 
+  invoice-worker: &worker-base
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: finflow-invoice-worker
+    restart: unless-stopped
+    networks:
+      - finflow-network
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://finflow:finflow123@postgres:5432/finflow_db
+      DATABASE_SYNC_URL: postgresql://finflow:finflow123@postgres:5432/finflow_db
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      QDRANT_URL: http://qdrant:6333
+      APP_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - .:/app
+      - api_venv:/app/.venv
+    working_dir: /app
+    command: ["uv", "run", "python", "-m", "workers.invoice_worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+
+  reconciliation-worker:
+    <<: *worker-base
+    container_name: finflow-reconciliation-worker
+    command: ["uv", "run", "python", "-m", "workers.reconciliation_worker"]
+
 networks:
   finflow-network:
     name: finflow-network
