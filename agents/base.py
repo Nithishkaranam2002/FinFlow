@@ -2,68 +2,92 @@
 
 from __future__ import annotations
 
-import os
 import uuid
-from functools import lru_cache
 from typing import Any
 
 import structlog
-from langchain_openai import ChatOpenAI
-from langfuse.langchain import CallbackHandler
+from core.observability import get_langfuse_callback_handler
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.state import FinFlowState
 from core.config import Settings, get_settings
+from core.llm_gateway import LLMGateway, LLMResponse, build_routing_context, get_llm_gateway
 
 logger = structlog.get_logger(__name__)
 
 
 class BaseAgent:
-    """Shared LLM, tracing, logging, and persistence utilities for FinFlow agents."""
+    """Shared LLM gateway, tracing, logging, and persistence utilities for FinFlow agents."""
+
+    agent_name: str = "base"
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
 
-    @staticmethod
-    @lru_cache
-    def _litellm_base_url() -> str | None:
-        return os.getenv("LITELLM_API_BASE")
+    @property
+    def gateway(self) -> LLMGateway:
+        return get_llm_gateway()
 
-    def _build_chat_model(self, model: str) -> ChatOpenAI:
-        litellm_base = self._litellm_base_url()
-        if litellm_base:
-            return ChatOpenAI(
-                model=model,
-                api_key=self.settings.litellm_master_key,
-                base_url=f"{litellm_base.rstrip('/')}/v1",
-                temperature=0,
-            )
-
-        api_key = self.settings.openai_api_key or self.settings.anthropic_api_key
-        return ChatOpenAI(
-            model=model,
-            api_key=api_key,
-            temperature=0,
+    async def invoke_llm(
+        self,
+        messages: list[Any],
+        *,
+        task_type: str,
+        tenant_id: str,
+        invoice_id: str | None = None,
+        context: dict[str, Any] | None = None,
+        tier: str | None = None,
+    ) -> LLMResponse:
+        return await self.gateway.acompletion(
+            messages=messages,
+            task_type=task_type,
+            agent_name=self.agent_name,
+            tenant_id=tenant_id,
+            invoice_id=invoice_id,
+            context=context,
+            tier=tier,
         )
 
-    @property
-    def llm(self) -> ChatOpenAI:
-        """Primary model for routine agent tasks (LiteLLM-routed when configured)."""
-        return self._build_chat_model(self.settings.primary_model)
+    async def invoke_llm_with_routing_context(
+        self,
+        messages: list[Any],
+        *,
+        task_type: str,
+        tenant_id: str,
+        invoice_id: str | None = None,
+        vendor_id: str | None = None,
+        is_vision: bool = False,
+        risk_score: float = 0.0,
+        extra_context: dict[str, Any] | None = None,
+    ) -> LLMResponse:
+        context = await build_routing_context(
+            tenant_id=tenant_id,
+            vendor_id=vendor_id,
+            is_vision=is_vision,
+            risk_score=risk_score,
+        )
+        if extra_context:
+            context.update(extra_context)
+        return await self.invoke_llm(
+            messages,
+            task_type=task_type,
+            tenant_id=tenant_id,
+            invoice_id=invoice_id,
+            context=context,
+        )
 
-    @property
-    def premium_llm(self) -> ChatOpenAI:
-        """Premium model for complex reasoning and approval decisions."""
-        return self._build_chat_model(self.settings.premium_model)
-
-    @property
-    def langfuse_callback(self) -> CallbackHandler:
+    def langfuse_callback(
+        self,
+        *,
+        tenant_id: str = "unknown",
+        invoice_id: str = "unknown",
+    ):
         """Langfuse tracing callback for LangChain/LangGraph runs."""
-        return CallbackHandler(
-            public_key=self.settings.langfuse_public_key,
-            secret_key=self.settings.langfuse_secret_key,
-            host=str(self.settings.langfuse_host),
+        return get_langfuse_callback_handler(
+            tenant_id=tenant_id,
+            invoice_id=invoice_id,
+            agent_name=self.agent_name,
         )
 
     def log_step(self, state: FinFlowState, step_name: str, **kwargs: Any) -> dict[str, Any]:

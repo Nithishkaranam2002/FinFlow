@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -14,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from agents.base import BaseAgent
 from agents.state import FinFlowState
 from core.database import async_session_factory
+from core.observability import trace_agent_step
 from models.invoice import Invoice, InvoiceStatus
 from models.vendor import Vendor
 from services.audit import log_audit_event
@@ -24,9 +26,15 @@ logger = structlog.get_logger(__name__)
 
 SYSTEM_ACTOR_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
-_agent = BaseAgent()
+
+class MatchingAgent(BaseAgent):
+    agent_name = "matching"
 
 
+_agent = MatchingAgent()
+
+
+@trace_agent_step("matching")
 async def match_vendor_node(state: FinFlowState) -> dict:
     update = _agent.log_step(state, "match_vendor")
     tenant_id = uuid.UUID(state["tenant_id"])
@@ -71,6 +79,7 @@ async def match_vendor_node(state: FinFlowState) -> dict:
     }
 
 
+@trace_agent_step("matching")
 async def check_fraud_node(state: FinFlowState) -> dict:
     update = _agent.log_step(state, "check_fraud")
     tenant_id = uuid.UUID(state["tenant_id"])
@@ -131,6 +140,25 @@ async def check_fraud_node(state: FinFlowState) -> dict:
         approval_status = "auto_rejected"
         requires_review = True
         review_reason = review_reason or "Invoice auto-rejected due to critical fraud risk"
+
+    if fraud_result.overall_risk_score > 0.5:
+        summary = await _agent.invoke_llm_with_routing_context(
+            [
+                {
+                    "role": "user",
+                    "content": (
+                        "Summarize these invoice fraud flags for a finance controller in one sentence. "
+                        f"Flags: {json.dumps(fraud_result.fraud_flags)} "
+                        f"Risk score: {fraud_result.overall_risk_score:.2f}"
+                    ),
+                }
+            ],
+            task_type="fraud_judgment",
+            tenant_id=str(tenant_id),
+            invoice_id=str(invoice_id),
+            risk_score=fraud_result.overall_risk_score,
+        )
+        review_reason = review_reason or summary.content
 
     logger.info(
         "fraud_checks_completed",

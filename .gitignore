@@ -31,6 +31,8 @@ ENV/
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+.deepeval/
+evals/reports/*.json
 
 # Logs
 *.log

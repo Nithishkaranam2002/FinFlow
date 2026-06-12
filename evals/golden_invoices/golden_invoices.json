@@ -1,0 +1,1056 @@
+{
+  "metadata": {
+    "generated_at": "2026-06-12T00:39:42.090488+00:00",
+    "source": "data/synthetic_data.json",
+    "count": 50,
+    "category_counts": {
+      "clean": 20,
+      "messy": 15,
+      "duplicate": 10,
+      "threshold": 5
+    },
+    "duplicate_pair_count": 15,
+    "threshold_invoice_count": 5
+  },
+  "invoices": [
+    {
+      "id": "c024372e-e5f7-544c-af5f-d667e5979b49",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "e91c54a5-c605-5431-bc08-43c924835191",
+      "invoice_number": "INV-2026-0001",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Baker, Williams and Stevens\nBill To: Acme Corp\nInvoice Number: INV-2026-0001\nInvoice Date: 2026-03-29\nDue Date: 2026-08-04\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nGenerate Turn-Key E-Commerce        4    4377.75   17511.00\n--------------------------------------------------------------\nTOTAL DUE: $17,511.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "17511.00",
+        "vendor_name": "Baker, Williams and Stevens",
+        "due_date": "2026-08-04",
+        "invoice_number": "INV-2026-0001"
+      }
+    },
+    {
+      "id": "66a0bc10-9086-51dd-a3ec-80136d11aac4",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "1a2f84ab-ba26-5d6b-bc8e-d5eb565ad92d",
+      "invoice_number": "INV-2026-0002",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Miller-Carter\nBill To: Acme Corp\nInvoice Number: INV-2026-0002\nInvoice Date: 2026-05-03\nDue Date: 2026-06-22\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nExpedite One-To-One Architecture    2   11579.84   23159.67\nProductize Dynamic Portals          3    7719.89   23159.66\nIntegrate User-Centric Synergies    5    4631.93   23159.67\n--------------------------------------------------------------\nTOTAL DUE: $69,479.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "69479.00",
+        "vendor_name": "Miller-Carter",
+        "due_date": "2026-06-22",
+        "invoice_number": "INV-2026-0002"
+      }
+    },
+    {
+      "id": "4834ace8-b925-5048-97c7-90f0f8a79e3a",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "1a2f84ab-ba26-5d6b-bc8e-d5eb565ad92d",
+      "invoice_number": "INV-2026-0003",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Miller-Carter\nBill To: Acme Corp\nInvoice Number: INV-2026-0003\nInvoice Date: 2026-05-26\nDue Date: 2026-08-03\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nMesh 24/365 Relationships           5    2775.70   13878.50\nBrand Innovative Web Services       9    1542.06   13878.50\n--------------------------------------------------------------\nTOTAL DUE: $27,757.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "27757.00",
+        "vendor_name": "Miller-Carter",
+        "due_date": "2026-08-03",
+        "invoice_number": "INV-2026-0003"
+      }
+    },
+    {
+      "id": "037e9fd0-a4e0-5b2d-bdfa-a0f2b15c64fc",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "002f7f52-c76a-5f0e-9d2f-cf66f062e136",
+      "invoice_number": "INV-2026-0004",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Reid-Diaz\nBill To: Acme Corp\nInvoice Number: INV-2026-0004\nInvoice Date: 2026-05-17\nDue Date: 2026-06-26\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nRedefine Open-Source E-Business     6    6069.17   36415.00\n--------------------------------------------------------------\nTOTAL DUE: $36,415.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "36415.00",
+        "vendor_name": "Reid-Diaz",
+        "due_date": "2026-06-26",
+        "invoice_number": "INV-2026-0004"
+      }
+    },
+    {
+      "id": "8d0df575-ee8b-5c81-8dea-398853e1579f",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "21eaaa9f-985d-595e-9770-09434c287e7f",
+      "invoice_number": "INV-2026-0006",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Garcia, Yang and Gardner\nBill To: Acme Corp\nInvoice Number: INV-2026-0006\nInvoice Date: 2026-04-22\nDue Date: 2026-09-03\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nDeliver Extensible Web Services     7    3467.36   24271.50\nDeploy World-Class Interfaces       3    8090.50   24271.50\n--------------------------------------------------------------\nTOTAL DUE: $48,543.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "48543.00",
+        "vendor_name": "Garcia, Yang and Gardner",
+        "due_date": "2026-09-03",
+        "invoice_number": "INV-2026-0006"
+      }
+    },
+    {
+      "id": "14002264-4f87-57a7-b517-0360b3ee6dd3",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "d39282eb-4e5f-5d93-91d8-645e78894d9a",
+      "invoice_number": "INV-2026-0009",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Lewis LLC\nBill To: Acme Corp\nInvoice Number: INV-2026-0009\nInvoice Date: 2026-05-29\nDue Date: 2026-08-04\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nGenerate World-Class Bandwidth      4    5040.17   20160.67\nGrow Visionary Methodologies        4    5040.16   20160.66\nArchitect Collaborative Communit    1   20160.67   20160.67\n--------------------------------------------------------------\nTOTAL DUE: $60,482.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "60482.00",
+        "vendor_name": "Lewis LLC",
+        "due_date": "2026-08-04",
+        "invoice_number": "INV-2026-0009"
+      }
+    },
+    {
+      "id": "87977301-e335-510d-b857-044d314cfa47",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "e91c54a5-c605-5431-bc08-43c924835191",
+      "invoice_number": "INV-2026-0010",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Baker, Williams and Stevens\nBill To: Acme Corp\nInvoice Number: INV-2026-0010\nInvoice Date: 2026-06-02\nDue Date: 2026-08-25\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nRepurpose Strategic Technologies    9    1282.64   11543.75\nDeliver Open-Source Infrastructu    6    1923.96   11543.75\nTransition Web-Enabled Methodolo    1   11543.75   11543.75\nMonetize Magnetic Solutions         2    5771.88   11543.75\n--------------------------------------------------------------\nTOTAL DUE: $46,175.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "46175.00",
+        "vendor_name": "Baker, Williams and Stevens",
+        "due_date": "2026-08-25",
+        "invoice_number": "INV-2026-0010"
+      }
+    },
+    {
+      "id": "46edaab3-c43a-5079-b040-9d7d73f26a82",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "fcb2fbd4-356f-581e-a3d6-6e2268783440",
+      "invoice_number": "INV-2026-0011",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Guzman, Hoffman and Baldwin\nBill To: Acme Corp\nInvoice Number: INV-2026-0011\nInvoice Date: 2026-05-05\nDue Date: 2026-08-04\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nOrchestrate Proactive Paradigms     7    2719.48   19036.33\nIncentivize Collaborative E-Busi   10    1903.63   19036.34\nIterate Intuitive Bandwidth         9    2115.15   19036.33\n--------------------------------------------------------------\nTOTAL DUE: $57,109.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "57109.00",
+        "vendor_name": "Guzman, Hoffman and Baldwin",
+        "due_date": "2026-08-04",
+        "invoice_number": "INV-2026-0011"
+      }
+    },
+    {
+      "id": "fa3192d2-46b3-57f1-8785-feceb40cd0d9",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "de29094d-d8c1-55ac-8185-13da5afd9b68",
+      "invoice_number": "INV-2026-0013",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Ford LLC\nBill To: Acme Corp\nInvoice Number: INV-2026-0013\nInvoice Date: 2026-05-15\nDue Date: 2026-08-12\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nOrchestrate Clicks-And-Mortar Pl    7    1937.52   13562.67\nRevolutionize Cutting-Edge E-Ser    5    2712.53   13562.66\nReinvent Plug-And-Play Markets      9    1506.96   13562.67\n--------------------------------------------------------------\nTOTAL DUE: $40,688.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "40688.00",
+        "vendor_name": "Ford LLC",
+        "due_date": "2026-08-12",
+        "invoice_number": "INV-2026-0013"
+      }
+    },
+    {
+      "id": "5339d292-c380-5500-8c1f-cc52aee70729",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "66ce4059-200a-5180-91c8-74ec15587e35",
+      "invoice_number": "INV-2026-0014",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Jones-Gentry\nBill To: Acme Corp\nInvoice Number: INV-2026-0014\nInvoice Date: 2026-04-08\nDue Date: 2026-07-29\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nEngage Interactive Initiatives      9    2076.19   18685.75\nTarget Global Bandwidth             1   18685.75   18685.75\nRepurpose Turn-Key Systems          5    3737.15   18685.75\nRe-Intermediate Cutting-Edge Sch    5    3737.15   18685.75\n--------------------------------------------------------------\nTOTAL DUE: $74,743.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "74743.00",
+        "vendor_name": "Jones-Gentry",
+        "due_date": "2026-07-29",
+        "invoice_number": "INV-2026-0014"
+      }
+    },
+    {
+      "id": "deb0e2aa-a7f7-52e7-a01e-8ba3216c434e",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "cec80767-6924-5e50-bb01-16a8a8ea47f8",
+      "invoice_number": "INV-2026-0015",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Clark-Adams\nBill To: Acme Corp\nInvoice Number: INV-2026-0015\nInvoice Date: 2026-04-28\nDue Date: 2026-07-18\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nGrow Granular Info-Mediaries        3    4842.00   14526.00\nGrow Back-End Action-Items          2    7263.00   14526.00\nE-Enable Efficient Deliverables     5    2905.20   14526.00\nSynthesize Web-Enabled Niches       9    1614.00   14526.00\n--------------------------------------------------------------\nTOTAL DUE: $58,104.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "58104.00",
+        "vendor_name": "Clark-Adams",
+        "due_date": "2026-07-18",
+        "invoice_number": "INV-2026-0015"
+      }
+    },
+    {
+      "id": "4847f728-f337-51cb-a1fd-5e4185ce7bee",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "6f834cdf-7e5e-5574-88b5-be172f1a126c",
+      "invoice_number": "INV-2026-0016",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 James LLC\nBill To: Acme Corp\nInvoice Number: INV-2026-0016\nInvoice Date: 2026-04-09\nDue Date: 2026-07-09\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nGrow Intuitive Technologies         1   26250.00   26250.00\n--------------------------------------------------------------\nTOTAL DUE: $26,250.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "26250.00",
+        "vendor_name": "James LLC",
+        "due_date": "2026-07-09",
+        "invoice_number": "INV-2026-0016"
+      }
+    },
+    {
+      "id": "33ddf453-d40a-5f6b-89ab-9f758a435294",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "002f7f52-c76a-5f0e-9d2f-cf66f062e136",
+      "invoice_number": "INV-2026-0017",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Reid-Diaz\nBill To: Acme Corp\nInvoice Number: INV-2026-0017\nInvoice Date: 2026-05-15\nDue Date: 2026-08-09\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nIncentivize Real-Time Supply-Cha    7     915.54    6408.75\nHarness Strategic Channels          4    1602.19    6408.75\nOrchestrate Bleeding-Edge Archit    3    2136.25    6408.75\nScale B2C E-Tailers                 1    6408.75    6408.75\n--------------------------------------------------------------\nTOTAL DUE: $25,635.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "25635.00",
+        "vendor_name": "Reid-Diaz",
+        "due_date": "2026-08-09",
+        "invoice_number": "INV-2026-0017"
+      }
+    },
+    {
+      "id": "01560ccf-7815-5cf0-a446-d77228a2e532",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "de29094d-d8c1-55ac-8185-13da5afd9b68",
+      "invoice_number": "INV-2026-0018",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Ford LLC\nBill To: Acme Corp\nInvoice Number: INV-2026-0018\nInvoice Date: 2026-04-11\nDue Date: 2026-06-27\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nOptimize Next-Generation E-Marke    2   15259.75   30519.50\nFacilitate Plug-And-Play E-Marke    8    3814.94   30519.50\n--------------------------------------------------------------\nTOTAL DUE: $61,039.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "61039.00",
+        "vendor_name": "Ford LLC",
+        "due_date": "2026-06-27",
+        "invoice_number": "INV-2026-0018"
+      }
+    },
+    {
+      "id": "607f1723-81d0-506b-b448-eb1e8953d6ba",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "66ce4059-200a-5180-91c8-74ec15587e35",
+      "invoice_number": "INV-2026-0019",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Jones-Gentry\nBill To: Acme Corp\nInvoice Number: INV-2026-0019\nInvoice Date: 2026-04-01\nDue Date: 2026-08-14\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nStreamline Best-Of-Breed E-Marke    3    5526.00   16578.00\nSynergize Vertical Networks         8    2072.25   16578.00\nSynergize Compelling Synergies      8    2072.25   16578.00\nSeize Seamless Architectures        5    3315.60   16578.00\n--------------------------------------------------------------\nTOTAL DUE: $66,312.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "66312.00",
+        "vendor_name": "Jones-Gentry",
+        "due_date": "2026-08-14",
+        "invoice_number": "INV-2026-0019"
+      }
+    },
+    {
+      "id": "1e1a8554-e6dc-5acc-b45b-f8c3671f035b",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "1198f5d3-e222-56bf-b8d2-86660ee1d098",
+      "invoice_number": "INV-2026-0020",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Jones, Reid and Ferguson\nBill To: Acme Corp\nInvoice Number: INV-2026-0020\nInvoice Date: 2026-05-20\nDue Date: 2026-07-26\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nIterate Next-Generation Users       2    3938.50    7877.00\nExtend Magnetic Models              5    1575.40    7877.00\nEnhance Real-Time E-Commerce        4    1969.25    7877.00\nSynthesize Proactive Architectur    5    1575.40    7877.00\n--------------------------------------------------------------\nTOTAL DUE: $31,508.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "31508.00",
+        "vendor_name": "Jones, Reid and Ferguson",
+        "due_date": "2026-07-26",
+        "invoice_number": "INV-2026-0020"
+      }
+    },
+    {
+      "id": "8f974e7d-e4fa-5851-8099-7ff605e1ba37",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "3588574f-7c93-576d-9fbf-8df55e7d3041",
+      "invoice_number": "INV-2026-0021",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Barnes, Cole and Ramirez\nBill To: Acme Corp\nInvoice Number: INV-2026-0021\nInvoice Date: 2026-04-14\nDue Date: 2026-08-09\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nFacilitate Wireless Communities     4    3807.62   15230.50\nE-Enable Plug-And-Play Channels     2    7615.25   15230.50\n--------------------------------------------------------------\nTOTAL DUE: $30,461.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "30461.00",
+        "vendor_name": "Barnes, Cole and Ramirez",
+        "due_date": "2026-08-09",
+        "invoice_number": "INV-2026-0021"
+      }
+    },
+    {
+      "id": "1af48bc8-f1ec-51cc-914c-195e7749e97f",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "4935e084-35a3-544b-bcc4-4d95697f6f35",
+      "invoice_number": "INV-2026-0023",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Hawkins, Cohen and Cameron\nBill To: Acme Corp\nInvoice Number: INV-2026-0023\nInvoice Date: 2026-04-18\nDue Date: 2026-09-06\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nStreamline Back-End Architecture    8    4483.25   35866.00\nHarness Killer Bandwidth            4    8966.50   35866.00\n--------------------------------------------------------------\nTOTAL DUE: $71,732.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "71732.00",
+        "vendor_name": "Hawkins, Cohen and Cameron",
+        "due_date": "2026-09-06",
+        "invoice_number": "INV-2026-0023"
+      }
+    },
+    {
+      "id": "84a92c9a-c218-55d8-8965-97048ad75325",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "a5e8643f-af19-5c52-bef4-fcf7347269a1",
+      "invoice_number": "INV-2026-0024",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Mcclure, Ward and Lee\nBill To: Acme Corp\nInvoice Number: INV-2026-0024\nInvoice Date: 2026-05-27\nDue Date: 2026-07-12\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nHarness Cross-Platform Architect    3    4428.67   13286.00\nEmpower Next-Generation Portals    10    1328.60   13286.00\nE-Enable Strategic Info-Mediarie    9    1476.22   13286.00\nUtilize Scalable Convergence        1   13286.00   13286.00\n--------------------------------------------------------------\nTOTAL DUE: $53,144.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "53144.00",
+        "vendor_name": "Mcclure, Ward and Lee",
+        "due_date": "2026-07-12",
+        "invoice_number": "INV-2026-0024"
+      }
+    },
+    {
+      "id": "1331c71f-ea12-59c7-8f4c-56f586f3ab54",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "002f7f52-c76a-5f0e-9d2f-cf66f062e136",
+      "invoice_number": "INV-2026-0025",
+      "category": "clean",
+      "messy_flags": [],
+      "flags": {},
+      "pdf_text": "INVOICE \u2014 Reid-Diaz\nBill To: Acme Corp\nInvoice Number: INV-2026-0025\nInvoice Date: 2026-04-26\nDue Date: 2026-08-19\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nEnhance Innovative Experiences      1    8968.00    8968.00\nIntegrate Proactive Action-Items    5    1793.60    8968.00\n--------------------------------------------------------------\nTOTAL DUE: $17,936.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "17936.00",
+        "vendor_name": "Reid-Diaz",
+        "due_date": "2026-08-19",
+        "invoice_number": "INV-2026-0025"
+      }
+    },
+    {
+      "id": "b7ea102d-9ed6-560a-8f2d-c9170906d63c",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "cec80767-6924-5e50-bb01-16a8a8ea47f8",
+      "invoice_number": "INV-2026-0005",
+      "category": "messy",
+      "messy_flags": [
+        "amount_as_text"
+      ],
+      "flags": {
+        "amount_as_text": true
+      },
+      "pdf_text": "INVOICE \u2014 Clark-Adams\nBill To: Acme Corp\nInvoice Number: INV-2026-0005\nInvoice Date: 2026-03-29\nDue Date: 2026-08-14\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nHarness 24/7 Content                2   36229.50   72459.00\n--------------------------------------------------------------\nTOTAL DUE: 72,459 dollars\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "72459.00",
+        "vendor_name": "Clark-Adams",
+        "due_date": "2026-08-14",
+        "invoice_number": "INV-2026-0005"
+      }
+    },
+    {
+      "id": "e5f2dde8-179e-53fe-8a24-77fb9488d664",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "d39282eb-4e5f-5d93-91d8-645e78894d9a",
+      "invoice_number": "INV-2026-0007",
+      "category": "messy",
+      "messy_flags": [
+        "vendor_name_misspelled"
+      ],
+      "flags": {
+        "vendor_name_misspelled": true
+      },
+      "pdf_text": "INVOICE \u2014 Lewie LLC\nBill To: Acme Corp\nInvoice Number: INV-2026-0007\nInvoice Date: 2026-04-15\nDue Date: 2026-07-04\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nScale Distributed Schemas           9    1216.89   10952.00\nEnable Dynamic E-Markets            7    1564.57   10952.00\nRepurpose Enterprise Methodologi   10    1095.20   10952.00\n--------------------------------------------------------------\nTOTAL DUE: $32,856.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "32856.00",
+        "vendor_name": "Lewie LLC",
+        "due_date": "2026-07-04",
+        "invoice_number": "INV-2026-0007"
+      }
+    },
+    {
+      "id": "dc8efbe0-7db8-57d0-8f8a-bdfa9e298e6a",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "21eaaa9f-985d-595e-9770-09434c287e7f",
+      "invoice_number": "INV-2026-0012",
+      "category": "messy",
+      "messy_flags": [
+        "vendor_name_misspelled"
+      ],
+      "flags": {
+        "vendor_name_misspelled": true
+      },
+      "pdf_text": "INVOICE \u2014 Garciaa Yang and Gardner\nBill To: Acme Corp\nInvoice Number: INV-2026-0012\nInvoice Date: 2026-04-29\nDue Date: 2026-06-21\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nDeploy Dynamic Architectures        6    4775.33   28652.00\nSynthesize Wireless Action-Items    7    4093.14   28652.00\n--------------------------------------------------------------\nTOTAL DUE: $57,304.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "57304.00",
+        "vendor_name": "Garciaa Yang and Gardner",
+        "due_date": "2026-06-21",
+        "invoice_number": "INV-2026-0012"
+      }
+    },
+    {
+      "id": "df6545fd-c459-5e05-a071-ca344c5f7c04",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "21eaaa9f-985d-595e-9770-09434c287e7f",
+      "invoice_number": "INV-2026-0022",
+      "category": "messy",
+      "messy_flags": [
+        "missing_due_date"
+      ],
+      "flags": {
+        "missing_due_date": true
+      },
+      "pdf_text": "INVOICE \u2014 Garcia, Yang and Gardner\nBill To: Acme Corp\nInvoice Number: INV-2026-0022\nInvoice Date: 2026-04-14\nDue Date: \n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nRe-Intermediate Proactive Interf   10     681.50    6815.00\nBenchmark Proactive Infrastructu    1    6815.00    6815.00\nVisualize Cutting-Edge Channels    10     681.50    6815.00\nCultivate Plug-And-Play Roi         7     973.57    6815.00\n--------------------------------------------------------------\nTOTAL DUE: $27,260.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "27260.00",
+        "vendor_name": "Garcia, Yang and Gardner",
+        "due_date": null,
+        "invoice_number": "INV-2026-0022"
+      }
+    },
+    {
+      "id": "3ffc2c4d-5173-5bc5-a890-52697feb7433",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "c0b9f027-d1c8-5e80-8af2-1bc2d708b5a1",
+      "invoice_number": "INV-2026-0027",
+      "category": "messy",
+      "messy_flags": [
+        "vendor_name_misspelled"
+      ],
+      "flags": {
+        "vendor_name_misspelled": true
+      },
+      "pdf_text": "INVOICE \u2014 Johnson-DavLT\nBill To: Acme Corp\nInvoice Number: INV-2026-0027\nInvoice Date: 2026-04-07\nDue Date: 2026-06-24\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nRevolutionize Out-Of-The-Box Com    4     678.25    2713.00\nExpedite One-To-One Communities     1    2713.00    2713.00\n--------------------------------------------------------------\nTOTAL DUE: $5,426.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "5426.00",
+        "vendor_name": "Johnson-DavLT",
+        "due_date": "2026-06-24",
+        "invoice_number": "INV-2026-0027"
+      }
+    },
+    {
+      "id": "c87c60bf-d199-5aff-9980-bd0aee2b9dda",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "e91c54a5-c605-5431-bc08-43c924835191",
+      "invoice_number": "INV-2026-0038",
+      "category": "messy",
+      "messy_flags": [
+        "amount_as_text"
+      ],
+      "flags": {
+        "amount_as_text": true
+      },
+      "pdf_text": "INVOICE \u2014 Baker, Williams and Stevens\nBill To: Acme Corp\nInvoice Number: INV-2026-0038\nInvoice Date: 2026-05-13\nDue Date: 2026-07-06\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nEmpower Efficient Schemas           6    2530.58   15183.50\nImplement Dynamic Infrastructure    2    7591.75   15183.50\n--------------------------------------------------------------\nTOTAL DUE: 30,367 dollars\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "30367.00",
+        "vendor_name": "Baker, Williams and Stevens",
+        "due_date": "2026-07-06",
+        "invoice_number": "INV-2026-0038"
+      }
+    },
+    {
+      "id": "da11bf6e-5968-55dc-bfd8-3d20e59b9e01",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "1198f5d3-e222-56bf-b8d2-86660ee1d098",
+      "invoice_number": "INV-2026-0042",
+      "category": "messy",
+      "messy_flags": [
+        "missing_due_date"
+      ],
+      "flags": {
+        "missing_due_date": true
+      },
+      "pdf_text": "INVOICE \u2014 Jones, Reid and Ferguson\nBill To: Acme Corp\nInvoice Number: INV-2026-0042\nInvoice Date: 2026-05-06\nDue Date: TBD\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nEngage Cross-Media E-Commerce       8     471.97    3775.75\nExtend Open-Source Convergence      2    1887.88    3775.75\nScale Ubiquitous Niches            10     377.58    3775.75\nMonetize Dot-Com E-Services         1    3775.75    3775.75\n--------------------------------------------------------------\nTOTAL DUE: $15,103.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "15103.00",
+        "vendor_name": "Jones, Reid and Ferguson",
+        "due_date": null,
+        "invoice_number": "INV-2026-0042"
+      }
+    },
+    {
+      "id": "2abbca72-a0d7-5f99-a53c-fbfb4107da73",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "4b76903f-ddd1-5679-ac1f-6493eaecb3df",
+      "invoice_number": "INV-2026-0051",
+      "category": "messy",
+      "messy_flags": [
+        "missing_due_date"
+      ],
+      "flags": {
+        "missing_due_date": true
+      },
+      "pdf_text": "INVOICE \u2014 Underwood LLC\nBill To: Acme Corp\nInvoice Number: INV-2026-0051\nInvoice Date: 2026-04-15\nDue Date: Upon receipt\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nEmbrace Innovative Interfaces       9     150.64    1355.75\nSynthesize Intuitive Networks       8     169.47    1355.75\nWhiteboard Scalable Eyeballs        5     271.15    1355.75\nOrchestrate Seamless Infrastruct    3     451.92    1355.75\n--------------------------------------------------------------\nTOTAL DUE: $5,423.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "5423.00",
+        "vendor_name": "Underwood LLC",
+        "due_date": null,
+        "invoice_number": "INV-2026-0051"
+      }
+    },
+    {
+      "id": "d3afb237-94a3-5dc6-80f3-4c92eddc2652",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "002f7f52-c76a-5f0e-9d2f-cf66f062e136",
+      "invoice_number": "INV-2026-0069",
+      "category": "messy",
+      "messy_flags": [
+        "missing_due_date"
+      ],
+      "flags": {
+        "missing_due_date": true
+      },
+      "pdf_text": "INVOICE \u2014 Reid-Diaz\nBill To: Acme Corp\nInvoice Number: INV-2026-0069\nInvoice Date: 2026-04-30\nDue Date: Upon receipt\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nStreamline Dynamic Deliverables     4    2744.17   10976.67\nDisintermediate Rich Functionali    7    1568.09   10976.66\nGrow Scalable E-Tailers             8    1372.08   10976.67\n--------------------------------------------------------------\nTOTAL DUE: $32,930.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "32930.00",
+        "vendor_name": "Reid-Diaz",
+        "due_date": null,
+        "invoice_number": "INV-2026-0069"
+      }
+    },
+    {
+      "id": "f858d3f9-d417-58a0-a3eb-233a96114afa",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "002f7f52-c76a-5f0e-9d2f-cf66f062e136",
+      "invoice_number": "INV-2026-0089",
+      "category": "messy",
+      "messy_flags": [
+        "missing_due_date"
+      ],
+      "flags": {
+        "missing_due_date": true
+      },
+      "pdf_text": "INVOICE \u2014 Reid-Diaz\nBill To: Acme Corp\nInvoice Number: INV-2026-0089\nInvoice Date: 2026-05-21\nDue Date: Upon receipt\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nTarget Dot-Com Bandwidth            3    4568.11   13704.33\nMorph Value-Added Bandwidth         8    1713.04   13704.34\nProductize Front-End Methodologi    2    6852.16   13704.33\n--------------------------------------------------------------\nTOTAL DUE: $41,113.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "41113.00",
+        "vendor_name": "Reid-Diaz",
+        "due_date": null,
+        "invoice_number": "INV-2026-0089"
+      }
+    },
+    {
+      "id": "26b34337-c170-583f-99d5-5bd8c5a9bad4",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "4935e084-35a3-544b-bcc4-4d95697f6f35",
+      "invoice_number": "INV-2026-0090",
+      "category": "messy",
+      "messy_flags": [
+        "vendor_name_misspelled"
+      ],
+      "flags": {
+        "vendor_name_misspelled": true
+      },
+      "pdf_text": "INVOICE \u2014 Hawkinso Cohen and Cameron\nBill To: Acme Corp\nInvoice Number: INV-2026-0090\nInvoice Date: 2026-04-22\nDue Date: 2026-09-04\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nIncubate Granular Partnerships      2    1335.16    2670.33\nGrow Cross-Media Applications       7     381.48    2670.34\nMonetize Cutting-Edge Portals       6     445.06    2670.33\n--------------------------------------------------------------\nTOTAL DUE: $8,011.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "8011.00",
+        "vendor_name": "Hawkinso Cohen and Cameron",
+        "due_date": "2026-09-04",
+        "invoice_number": "INV-2026-0090"
+      }
+    },
+    {
+      "id": "6a7d31b0-45ad-5208-8674-de7100fcb5f1",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "de29094d-d8c1-55ac-8185-13da5afd9b68",
+      "invoice_number": "INV-2026-0094",
+      "category": "messy",
+      "messy_flags": [
+        "amount_as_text"
+      ],
+      "flags": {
+        "amount_as_text": true
+      },
+      "pdf_text": "INVOICE \u2014 Ford LLC\nBill To: Acme Corp\nInvoice Number: INV-2026-0094\nInvoice Date: 2026-05-31\nDue Date: 2026-08-08\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nImplement Scalable Metrics          8     885.84    7086.75\nExtend Rich Technologies            6    1181.12    7086.75\nRevolutionize Bleeding-Edge Metr    3    2362.25    7086.75\nExploit Synergistic E-Services      6    1181.12    7086.75\n--------------------------------------------------------------\nTOTAL DUE: 28,347 dollars\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "28347.00",
+        "vendor_name": "Ford LLC",
+        "due_date": "2026-08-08",
+        "invoice_number": "INV-2026-0094"
+      }
+    },
+    {
+      "id": "7312f7b6-e02e-5e48-b1e2-f21f06e39442",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "3588574f-7c93-576d-9fbf-8df55e7d3041",
+      "invoice_number": "INV-2026-0095",
+      "category": "messy",
+      "messy_flags": [
+        "amount_as_text"
+      ],
+      "flags": {
+        "amount_as_text": true
+      },
+      "pdf_text": "INVOICE \u2014 Barnes, Cole and Ramirez\nBill To: Acme Corp\nInvoice Number: INV-2026-0095\nInvoice Date: 2026-04-05\nDue Date: 2026-09-08\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nWhiteboard Dynamic E-Business       2   10391.00   20782.00\n--------------------------------------------------------------\nTOTAL DUE: 20,782 dollars\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "20782.00",
+        "vendor_name": "Barnes, Cole and Ramirez",
+        "due_date": "2026-09-08",
+        "invoice_number": "INV-2026-0095"
+      }
+    },
+    {
+      "id": "abea1784-6b6c-5a8d-9aed-72681ae35e1e",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "1198f5d3-e222-56bf-b8d2-86660ee1d098",
+      "invoice_number": "INV-2026-0097",
+      "category": "messy",
+      "messy_flags": [
+        "missing_due_date"
+      ],
+      "flags": {
+        "missing_due_date": true
+      },
+      "pdf_text": "INVOICE \u2014 Jones, Reid and Ferguson\nBill To: Acme Corp\nInvoice Number: INV-2026-0097\nInvoice Date: 2026-05-10\nDue Date: Upon receipt\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nBenchmark Bricks-And-Clicks Chan    4   17304.00   69216.00\n--------------------------------------------------------------\nTOTAL DUE: $69,216.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "69216.00",
+        "vendor_name": "Jones, Reid and Ferguson",
+        "due_date": null,
+        "invoice_number": "INV-2026-0097"
+      }
+    },
+    {
+      "id": "ca7cc313-95c9-5d92-af41-16cb1ae86000",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "vendor_id": "a6815562-e5f6-5ff2-ae59-b81addfa46ac",
+      "invoice_number": "INV-2026-0021",
+      "category": "messy",
+      "messy_flags": [
+        "missing_due_date"
+      ],
+      "flags": {
+        "missing_due_date": true
+      },
+      "pdf_text": "INVOICE \u2014 Baker, Mason and White\nBill To: TechNova Ltd\nInvoice Number: INV-2026-0021\nInvoice Date: 2026-03-20\nDue Date: \n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nExpedite Distributed Bandwidth      5    3858.40   19292.00\n--------------------------------------------------------------\nTOTAL DUE: $19,292.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "19292.00",
+        "vendor_name": "Baker, Mason and White",
+        "due_date": null,
+        "invoice_number": "INV-2026-0021"
+      }
+    },
+    {
+      "id": "db884273-d58e-544f-bd08-27b856abe4e2",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "fe02d464-c7af-5e0f-91a8-a43b62c720ae",
+      "invoice_number": "INV20260034",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "926a0c9a-39a6-5e53-aa71-751f2d7f594c",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Mitchell-Kim\nBill To: PeakLogistics\nInvoice Number: INV20260034\nInvoice Date: 2026-05-16\nDue Date: 2026-08-26\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nRepurpose B2C E-Commerce           10     446.17    4461.67\nGenerate Enterprise Partnerships   10     446.17    4461.66\nGrow Compelling Applications        3    1487.22    4461.67\n--------------------------------------------------------------\nTOTAL DUE: $13,385.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "13385.00",
+        "vendor_name": "Mitchell-Kim",
+        "due_date": "2026-08-26",
+        "invoice_number": "INV20260034"
+      }
+    },
+    {
+      "id": "c1b8887d-9a62-5b61-ab7f-475663b79204",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "a8b99a77-44c5-5961-8bbc-b2192fab85a8",
+      "invoice_number": "INV20260065",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "c087a786-c1d2-5c40-aa45-488c4759fa5a",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Cox-Osborn\nBill To: TechNova Ltd\nInvoice Number: INV20260065\nInvoice Date: 2026-03-31\nDue Date: 2026-07-22\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nSynergize B2C Communities           9    3501.44   31513.00\n--------------------------------------------------------------\nTOTAL DUE: $31,513.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "31513.00",
+        "vendor_name": "Cox-Osborn",
+        "due_date": "2026-07-22",
+        "invoice_number": "INV20260065"
+      }
+    },
+    {
+      "id": "e313d0ad-82f9-5734-b233-aec9186ce72c",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "vendor_id": "cec80767-6924-5e50-bb01-16a8a8ea47f8",
+      "invoice_number": "INV20260046",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "d17a10c9-5726-5cb6-ae13-d5e19ede973b",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Clark-Adams\nBill To: Acme Corp\nInvoice Number: INV20260046\nInvoice Date: 2026-04-02\nDue Date: 2026-07-28\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nEnhance Bricks-And-Clicks Roi       4   15435.50   61742.00\n--------------------------------------------------------------\nTOTAL DUE: $61,742.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "61742.00",
+        "vendor_name": "Clark-Adams",
+        "due_date": "2026-07-28",
+        "invoice_number": "INV20260046"
+      }
+    },
+    {
+      "id": "d210573a-a8f4-5526-8e71-f8673ecb8b6f",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "5be6a397-674a-5dc5-b5ca-529391ad39b5",
+      "invoice_number": "INV20260057",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "4a175184-deab-53a6-9ceb-4c842bc5a330",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Moore-Smith\nBill To: TechNova Ltd\nInvoice Number: INV20260057\nInvoice Date: 2026-03-20\nDue Date: 2026-06-23\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nIncentivize Visionary Systems       6    3466.39   20798.33\nMesh Granular Relationships         2   10399.17   20798.34\nDisintermediate Front-End Archit    7    2971.19   20798.33\n--------------------------------------------------------------\nTOTAL DUE: $62,395.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "62395.00",
+        "vendor_name": "Moore-Smith",
+        "due_date": "2026-06-23",
+        "invoice_number": "INV20260057"
+      }
+    },
+    {
+      "id": "bd0c5e6d-23a2-54d0-9b0f-57b2f40bb451",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "c42aecbb-ab0e-5fd9-8319-c38c0e5ac2fb",
+      "invoice_number": "INV20260080",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "d0d6bceb-8b70-5310-b935-5fc936c243fb",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Lin-Rasmussen\nBill To: BlueStar Health\nInvoice Number: INV20260080\nInvoice Date: 2026-05-17\nDue Date: 2026-06-23\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nStrategize Open-Source Action-It   10     466.90    4669.00\nStreamline Collaborative Niches     9     518.78    4669.00\nProductize Out-Of-The-Box Web-Re    1    4669.00    4669.00\nFacilitate Seamless Content         5     933.80    4669.00\n--------------------------------------------------------------\nTOTAL DUE: $18,676.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "18676.00",
+        "vendor_name": "Lin-Rasmussen",
+        "due_date": "2026-06-23",
+        "invoice_number": "INV20260080"
+      }
+    },
+    {
+      "id": "cbb4a910-5633-5779-b448-129f06424468",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "a5e8643f-af19-5c52-bef4-fcf7347269a1",
+      "invoice_number": "INV20260093",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "c62b9953-64f1-5d78-98c4-3694838866fc",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Mcclure, Ward and Lee\nBill To: Acme Corp\nInvoice Number: INV20260093\nInvoice Date: 2026-03-14\nDue Date: 2026-06-21\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nSeize Distributed Technologies      3    7693.17   23079.50\nUtilize Impactful Niches           10    2307.95   23079.50\n--------------------------------------------------------------\nTOTAL DUE: $46,159.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "46159.00",
+        "vendor_name": "Mcclure, Ward and Lee",
+        "due_date": "2026-06-21",
+        "invoice_number": "INV20260093"
+      }
+    },
+    {
+      "id": "574d6f6b-f35c-509e-b31e-8804e0b8962e",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "442af399-3403-5ed8-8f19-ea61d5927126",
+      "invoice_number": "INV20260016",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "186adaa5-73d4-516b-9cc7-90a9edf6fe15",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Lewis-Anderson\nBill To: Meridian Foods\nInvoice Number: INV20260016\nInvoice Date: 2026-05-18\nDue Date: 2026-07-28\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nDeliver Sticky Vortals              7    8231.29   57619.00\n--------------------------------------------------------------\nTOTAL DUE: $57,619.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "57619.00",
+        "vendor_name": "Lewis-Anderson",
+        "due_date": "2026-07-28",
+        "invoice_number": "INV20260016"
+      }
+    },
+    {
+      "id": "ba964878-db01-53df-b743-d082a8c28731",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "576cef50-cd3b-543c-a73e-f15c59cb3f7e",
+      "invoice_number": "INV20260016",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "710385de-6e87-5f0f-9770-44039384ed11",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Hoffman-Rodriguez\nBill To: BlueStar Health\nInvoice Number: INV20260016\nInvoice Date: 2026-03-26\nDue Date: 2026-07-13\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nTransform Best-Of-Breed Delivera    6    3034.83   18209.00\nIncentivize Next-Generation Mode    6    3034.83   18209.00\nStreamline B2B Niches               4    4552.25   18209.00\nEvolve Revolutionary E-Services    10    1820.90   18209.00\n--------------------------------------------------------------\nTOTAL DUE: $72,836.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "72836.00",
+        "vendor_name": "Hoffman-Rodriguez",
+        "due_date": "2026-07-13",
+        "invoice_number": "INV20260016"
+      }
+    },
+    {
+      "id": "9b9e5c73-64f4-550c-ba95-db81effadc65",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "4935e084-35a3-544b-bcc4-4d95697f6f35",
+      "invoice_number": "INV20260054",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "47b32683-785d-514f-8764-f540a2f7eaae",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Hawkins, Cohen and Cameron\nBill To: Acme Corp\nInvoice Number: INV20260054\nInvoice Date: 2026-05-17\nDue Date: 2026-08-12\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nMaximize Leading-Edge E-Business    4   15175.50   60702.00\n--------------------------------------------------------------\nTOTAL DUE: $60,702.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "60702.00",
+        "vendor_name": "Hawkins, Cohen and Cameron",
+        "due_date": "2026-08-12",
+        "invoice_number": "INV20260054"
+      }
+    },
+    {
+      "id": "5db87854-e64c-5f03-b7a9-d7aa7945b240",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "f6fdf7f9-b2ab-5c12-ad49-c42ce357b196",
+      "invoice_number": "INV20260010",
+      "category": "duplicate",
+      "messy_flags": [],
+      "flags": {
+        "duplicate_of": "1c9e2ecd-24d3-5157-89e4-10d32938b9ce",
+        "duplicate_pair": true
+      },
+      "pdf_text": "INVOICE \u2014 Kennedy, Mueller and Aguirre\nBill To: Meridian Foods\nInvoice Number: INV20260010\nInvoice Date: 2026-04-19\nDue Date: 2026-07-12\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nIncubate E-Business Mindshare       3    5704.33   17113.00\nVisualize Frictionless Applicati    3    5704.33   17113.00\nBenchmark B2C Communities           5    3422.60   17113.00\nRepurpose Cross-Platform Network    5    3422.60   17113.00\n--------------------------------------------------------------\nTOTAL DUE: $68,452.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "68452.00",
+        "vendor_name": "Kennedy, Mueller and Aguirre",
+        "due_date": "2026-07-12",
+        "invoice_number": "INV20260010"
+      }
+    },
+    {
+      "id": "5e1adc01-4cd1-56c7-a5b9-88e1a2a12097",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "4935e084-35a3-544b-bcc4-4d95697f6f35",
+      "invoice_number": "INV-2026-0078",
+      "category": "threshold",
+      "messy_flags": [],
+      "flags": {
+        "threshold_avoidance": true,
+        "approval_threshold": "5000.00"
+      },
+      "pdf_text": "INVOICE \u2014 Hawkins, Cohen and Cameron\nBill To: Acme Corp\nInvoice Number: INV-2026-0078\nInvoice Date: 2026-05-07\nDue Date: 2026-09-04\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nUnleash Enterprise Architectures   10     122.22    1222.25\nRepurpose B2C Models                7     174.61    1222.25\nIntegrate End-To-End Mindshare      5     244.45    1222.25\nBenchmark Open-Source Platforms     1    1222.25    1222.25\n--------------------------------------------------------------\nTOTAL DUE: $4,889.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "4889.00",
+        "vendor_name": "Hawkins, Cohen and Cameron",
+        "due_date": "2026-09-04",
+        "invoice_number": "INV-2026-0078"
+      }
+    },
+    {
+      "id": "c19c40af-0083-5d9d-b6b9-719e8aeb8dd0",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "vendor_id": "d95ff5cf-ca6d-5ed6-9a4f-3e428d4fae8c",
+      "invoice_number": "INV-2026-0083",
+      "category": "threshold",
+      "messy_flags": [],
+      "flags": {
+        "threshold_avoidance": true,
+        "approval_threshold": "5000.00"
+      },
+      "pdf_text": "INVOICE \u2014 Hickman Ltd\nBill To: TechNova Ltd\nInvoice Number: INV-2026-0083\nInvoice Date: 2026-05-08\nDue Date: 2026-07-22\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nExtend Open-Source Channels         9     274.39    2469.50\nIntegrate Synergistic Users         4     617.38    2469.50\n--------------------------------------------------------------\nTOTAL DUE: $4,939.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "4939.00",
+        "vendor_name": "Hickman Ltd",
+        "due_date": "2026-07-22",
+        "invoice_number": "INV-2026-0083"
+      }
+    },
+    {
+      "id": "96b99c5d-48ff-5264-9c37-9e240f0b1940",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "vendor_id": "75fb6aac-7afd-5d15-a5ad-85cc12530b3e",
+      "invoice_number": "INV-2026-0085",
+      "category": "threshold",
+      "messy_flags": [],
+      "flags": {
+        "threshold_avoidance": true,
+        "approval_threshold": "5000.00"
+      },
+      "pdf_text": "INVOICE \u2014 Thomas-Taylor\nBill To: TechNova Ltd\nInvoice Number: INV-2026-0085\nInvoice Date: 2026-04-14\nDue Date: 2026-09-04\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nGenerate 24/365 Paradigms           6     822.00    4932.00\n--------------------------------------------------------------\nTOTAL DUE: $4,932.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "4932.00",
+        "vendor_name": "Thomas-Taylor",
+        "due_date": "2026-09-04",
+        "invoice_number": "INV-2026-0085"
+      }
+    },
+    {
+      "id": "9e7d5345-2b81-517d-933a-11929037a022",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "e966f2bc-cf1c-5e88-ac1e-b707c51678f2",
+      "invoice_number": "INV-2026-0008",
+      "category": "threshold",
+      "messy_flags": [],
+      "flags": {
+        "threshold_avoidance": true,
+        "approval_threshold": "5000.00"
+      },
+      "pdf_text": "INVOICE \u2014 Perez Inc\nBill To: Meridian Foods\nInvoice Number: INV-2026-0008\nInvoice Date: 2026-03-22\nDue Date: 2026-07-14\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nEngage Efficient Channels           1    4943.00    4943.00\n--------------------------------------------------------------\nTOTAL DUE: $4,943.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "4943.00",
+        "vendor_name": "Perez Inc",
+        "due_date": "2026-07-14",
+        "invoice_number": "INV-2026-0008"
+      }
+    },
+    {
+      "id": "ae339b7e-7871-57bf-9203-2331f16a9e43",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "00fe0b1a-e7c7-5457-8dd1-a6d2b5daa649",
+      "invoice_number": "INV-2026-0063",
+      "category": "threshold",
+      "messy_flags": [],
+      "flags": {
+        "threshold_avoidance": true,
+        "approval_threshold": "5000.00"
+      },
+      "pdf_text": "INVOICE \u2014 Brown Inc\nBill To: Meridian Foods\nInvoice Number: INV-2026-0063\nInvoice Date: 2026-03-19\nDue Date: 2026-07-27\n\nDescription                          Qty    Unit       Amount\n--------------------------------------------------------------\nGrow Leading-Edge Bandwidth         6     822.83    4937.00\n--------------------------------------------------------------\nTOTAL DUE: $4,937.00\n\nRemit payment to the address above. Include invoice number with payment.\nQuestions? accounts@example.com",
+      "expected": {
+        "total_amount": "4937.00",
+        "vendor_name": "Brown Inc",
+        "due_date": "2026-07-27",
+        "invoice_number": "INV-2026-0063"
+      }
+    }
+  ],
+  "duplicate_pairs": [
+    {
+      "target_invoice_id": "db884273-d58e-544f-bd08-27b856abe4e2",
+      "source_invoice_id": "926a0c9a-39a6-5e53-aa71-751f2d7f594c",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "fe02d464-c7af-5e0f-91a8-a43b62c720ae"
+    },
+    {
+      "target_invoice_id": "c1b8887d-9a62-5b61-ab7f-475663b79204",
+      "source_invoice_id": "c087a786-c1d2-5c40-aa45-488c4759fa5a",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "a8b99a77-44c5-5961-8bbc-b2192fab85a8"
+    },
+    {
+      "target_invoice_id": "e313d0ad-82f9-5734-b233-aec9186ce72c",
+      "source_invoice_id": "d17a10c9-5726-5cb6-ae13-d5e19ede973b",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "vendor_id": "cec80767-6924-5e50-bb01-16a8a8ea47f8"
+    },
+    {
+      "target_invoice_id": "d210573a-a8f4-5526-8e71-f8673ecb8b6f",
+      "source_invoice_id": "4a175184-deab-53a6-9ceb-4c842bc5a330",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "5be6a397-674a-5dc5-b5ca-529391ad39b5"
+    },
+    {
+      "target_invoice_id": "bd0c5e6d-23a2-54d0-9b0f-57b2f40bb451",
+      "source_invoice_id": "d0d6bceb-8b70-5310-b935-5fc936c243fb",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "c42aecbb-ab0e-5fd9-8319-c38c0e5ac2fb"
+    },
+    {
+      "target_invoice_id": "cbb4a910-5633-5779-b448-129f06424468",
+      "source_invoice_id": "c62b9953-64f1-5d78-98c4-3694838866fc",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "a5e8643f-af19-5c52-bef4-fcf7347269a1"
+    },
+    {
+      "target_invoice_id": "574d6f6b-f35c-509e-b31e-8804e0b8962e",
+      "source_invoice_id": "186adaa5-73d4-516b-9cc7-90a9edf6fe15",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "442af399-3403-5ed8-8f19-ea61d5927126"
+    },
+    {
+      "target_invoice_id": "ba964878-db01-53df-b743-d082a8c28731",
+      "source_invoice_id": "710385de-6e87-5f0f-9770-44039384ed11",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "576cef50-cd3b-543c-a73e-f15c59cb3f7e"
+    },
+    {
+      "target_invoice_id": "9b9e5c73-64f4-550c-ba95-db81effadc65",
+      "source_invoice_id": "47b32683-785d-514f-8764-f540a2f7eaae",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "4935e084-35a3-544b-bcc4-4d95697f6f35"
+    },
+    {
+      "target_invoice_id": "5db87854-e64c-5f03-b7a9-d7aa7945b240",
+      "source_invoice_id": "1c9e2ecd-24d3-5157-89e4-10d32938b9ce",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "f6fdf7f9-b2ab-5c12-ad49-c42ce357b196"
+    },
+    {
+      "target_invoice_id": "b4785b9b-a0b5-54ec-9974-886f572583dc",
+      "source_invoice_id": "7e97ba7b-bf58-5c16-bf99-11c98b79dccd",
+      "tenant_id": "ddc7b39c-0bc1-57dc-b96c-1359f4d34150",
+      "vendor_id": "715f7f9c-e52e-5109-b606-c2a2eaad9281"
+    },
+    {
+      "target_invoice_id": "7000f29a-a932-5fca-8f0f-461dfd510189",
+      "source_invoice_id": "1650f5d3-19d7-5225-b320-8e79b12ea1fd",
+      "tenant_id": "ddc7b39c-0bc1-57dc-b96c-1359f4d34150",
+      "vendor_id": "cf885777-6255-5b37-9cf7-9ec4715e054b"
+    },
+    {
+      "target_invoice_id": "3f1d0f13-0f6f-5a97-8018-c3962c9ef20a",
+      "source_invoice_id": "70fe024c-43ef-5de7-a688-43e267ad8438",
+      "tenant_id": "ddc7b39c-0bc1-57dc-b96c-1359f4d34150",
+      "vendor_id": "e91c54a5-c605-5431-bc08-43c924835191"
+    },
+    {
+      "target_invoice_id": "abcb545c-a664-58b8-8edf-b00a6e9bc3c8",
+      "source_invoice_id": "4d1eee8c-09b7-5de3-923c-8cfb13637d5f",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "vendor_id": "3588574f-7c93-576d-9fbf-8df55e7d3041"
+    },
+    {
+      "target_invoice_id": "47796066-3a0c-576e-be49-25f358b4bef5",
+      "source_invoice_id": "a9bcf8bc-ffc0-5ae6-8067-d3fb3110fe03",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "vendor_id": "6e71c7bd-3153-570b-9858-bb7e9338b06d"
+    }
+  ],
+  "threshold_invoices": [
+    {
+      "invoice_id": "5e1adc01-4cd1-56c7-a5b9-88e1a2a12097",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "vendor_id": "4935e084-35a3-544b-bcc4-4d95697f6f35",
+      "invoice_number": "INV-2026-0078",
+      "amount": "4889.00",
+      "approval_threshold": "5000.00"
+    },
+    {
+      "invoice_id": "c19c40af-0083-5d9d-b6b9-719e8aeb8dd0",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "vendor_id": "d95ff5cf-ca6d-5ed6-9a4f-3e428d4fae8c",
+      "invoice_number": "INV-2026-0083",
+      "amount": "4939.00",
+      "approval_threshold": "5000.00"
+    },
+    {
+      "invoice_id": "96b99c5d-48ff-5264-9c37-9e240f0b1940",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "vendor_id": "75fb6aac-7afd-5d15-a5ad-85cc12530b3e",
+      "invoice_number": "INV-2026-0085",
+      "amount": "4932.00",
+      "approval_threshold": "5000.00"
+    },
+    {
+      "invoice_id": "9e7d5345-2b81-517d-933a-11929037a022",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "e966f2bc-cf1c-5e88-ac1e-b707c51678f2",
+      "invoice_number": "INV-2026-0008",
+      "amount": "4943.00",
+      "approval_threshold": "5000.00"
+    },
+    {
+      "invoice_id": "ae339b7e-7871-57bf-9203-2331f16a9e43",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "vendor_id": "00fe0b1a-e7c7-5457-8dd1-a6d2b5daa649",
+      "invoice_number": "INV-2026-0063",
+      "amount": "4937.00",
+      "approval_threshold": "5000.00"
+    }
+  ]
+}

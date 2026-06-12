@@ -135,6 +135,11 @@ class InvoiceApproveRequest(BaseModel):
     notes: str | None = Field(default=None, max_length=2000)
 
 
+class ExtractionCorrectionRequest(BaseModel):
+    corrections: dict[str, Any] = Field(min_length=1)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
 class AuditLogResponse(BaseModel):
     id: uuid.UUID
     entity_type: str

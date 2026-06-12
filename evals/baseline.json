@@ -1,0 +1,11 @@
+{
+  "field_accuracy": 0.9,
+  "confidence_calibration_rate": 1.0,
+  "duplicate_detection_rate": 1.0,
+  "threshold_gaming_detection_rate": 1.0,
+  "reconciliation_match_rate": 0.85,
+  "exact_fuzzy_match_rate": 0.6,
+  "llm_reasoning_quality_rate": 0.8,
+  "updated_at": "2026-06-11T00:00:00Z",
+  "notes": "Initial baseline for FinFlow AI quality gates. CI fails if metrics drop below these values."
+}

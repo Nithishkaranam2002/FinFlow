@@ -1,0 +1,819 @@
+{
+  "metadata": {
+    "generated_at": "2026-06-12T00:39:42.134795+00:00",
+    "source": "data/synthetic_data.json",
+    "pair_count": 30,
+    "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+    "messy_pair_count": 30
+  },
+  "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+  "pairs": [
+    {
+      "pair_id": "88b2c54d-453a-5551-8693-d8aec830b12b",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "invoice_id": "46edaab3-c43a-5079-b040-9d7d73f26a82",
+      "expected_invoice_ids": [
+        "46edaab3-c43a-5079-b040-9d7d73f26a82",
+        "1af48bc8-f1ec-51cc-914c-195e7749e97f",
+        "b6b523f9-27dc-5248-a61b-1fd6843677a0"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0011",
+      "bank_line": {
+        "id": "55bff21e-d7cc-541a-9039-26b03f5c2e81",
+        "transaction_date": "2026-02-19",
+        "amount": "-202138.00",
+        "description": "PAYMT \u2014 ACME \u201cSERVICES\u201d GUZMAN, HOFFMAN AN",
+        "reference": "INV-2026-0011",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "45ca6e63-43ab-5232-ad70-c40e745668ef",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "f768744b-ebbf-56a5-a665-16bb8813f5dd",
+      "expected_invoice_ids": [
+        "f768744b-ebbf-56a5-a665-16bb8813f5dd",
+        "1843fc71-1c03-5a40-8f52-ff2a8ba6c1e2",
+        "030beb80-d5ce-5cb7-802d-83a746ad3d5a"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0026",
+      "bank_line": {
+        "id": "6d14f1fc-3e6d-50ab-b04d-8a2822884827",
+        "transaction_date": "2026-02-27",
+        "amount": "-33037.00",
+        "description": "PAYMENT \u2013 vendor\u2019s invoice EVANS, FOWLER AND ",
+        "reference": "INV-2026-0026",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "66877413-23fc-5338-99e3-b03eaa191709",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "4fb8c3e4-0ead-5053-80c7-4bf05019ae09",
+      "expected_invoice_ids": [
+        "4fb8c3e4-0ead-5053-80c7-4bf05019ae09",
+        "1f0423fc-a667-5910-a8a7-b8844d384b74",
+        "cb2e11af-6035-52bf-ad65-085ffc24216b"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0081",
+      "bank_line": {
+        "id": "65ca1b30-0242-515a-a660-52971dac782c",
+        "transaction_date": "2026-02-24",
+        "amount": "-121305.00",
+        "description": "TRANSFERREF 8842 EDWARDS, RIOS AND ",
+        "reference": "INV-2026-0081",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "4fd91570-05ef-59e2-aa70-0568bff6db78",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "b7497382-3fd1-58ad-a967-d8f14ea7fec5",
+      "expected_invoice_ids": [
+        "b7497382-3fd1-58ad-a967-d8f14ea7fec5",
+        "ce10f066-dd8a-50db-b7d3-47250285e1c8",
+        "4d84ed5b-aef7-58fa-a9ca-ae6c86becb88"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0018",
+      "bank_line": {
+        "id": "5fb3e980-0a52-533c-83bb-108e86e5ce4d",
+        "transaction_date": "2026-05-29",
+        "amount": "-143911.00",
+        "description": "PAYMENT \u2013 vendor\u2019s invoice SNYDER, CAMPOS AND",
+        "reference": "INV-2026-0018",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "c3dd2ec8-a233-5559-9d4a-8093446ce1e0",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "invoice_id": "20d875c6-1d26-5ac0-9d56-6b78a1a6e067",
+      "expected_invoice_ids": [
+        "20d875c6-1d26-5ac0-9d56-6b78a1a6e067",
+        "ba964878-db01-53df-b743-d082a8c28731",
+        "eb122e98-b47d-5f3b-aa95-d7138f4df4d9"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0054",
+      "bank_line": {
+        "id": "5a384cd2-e79f-5ab7-9af6-398621ce5e81",
+        "transaction_date": "2026-04-04",
+        "amount": "-167229.00",
+        "description": "TRANSFERREF 8842 TUCKER-LEWIS",
+        "reference": "INV-2026-0054",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "42029296-952f-57d4-a97c-0b3e6bac67c1",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "invoice_id": "6f1a581d-6795-51dc-adb7-da4144b85e46",
+      "expected_invoice_ids": [
+        "6f1a581d-6795-51dc-adb7-da4144b85e46",
+        "45061d91-4165-59ea-8dc4-3ad992eb7fd8",
+        "8aca2449-2c53-53a9-9b01-c913a32b5267"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0087",
+      "bank_line": {
+        "id": "27d42e87-fb5d-5c1c-9dff-636c9456abfa",
+        "transaction_date": "2026-03-22",
+        "amount": "-134003.00",
+        "description": "PAYMENT \u2013 vendor\u2019s invoice BRADY, FROST AND Y",
+        "reference": "INV-2026-0087",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "a9b497b5-506c-5756-89a1-3bb96ce7b0b6",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "invoice_id": "8e3cb293-d0a9-5467-a016-36a479be8877",
+      "expected_invoice_ids": [
+        "8e3cb293-d0a9-5467-a016-36a479be8877",
+        "6be2b50b-9b1d-5e53-b1c9-ea2d79a8fdaa",
+        "fac93497-dd25-5039-9d11-9e11a30056f5"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0089",
+      "bank_line": {
+        "id": "a7d59e5b-d785-55d9-aaa0-bafd08e8bf32",
+        "transaction_date": "2026-05-06",
+        "amount": "-165865.00",
+        "description": "PAYMENT \u2013 vendor\u2019s invoice HOFFMAN-RODRIGUEZ",
+        "reference": "INV-2026-0089",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "32cd15c1-4c39-5f74-a446-6014085f1819",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "invoice_id": "06511724-7676-553d-94e2-ec1837c60b82",
+      "expected_invoice_ids": [
+        "06511724-7676-553d-94e2-ec1837c60b82",
+        "2e3f35a4-8cec-5a19-ba79-8984401e843b",
+        "e2840b4f-f94f-5993-9a68-6269398ad2cf"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0071",
+      "bank_line": {
+        "id": "d4f024b1-5091-5109-a92f-8015605dbffd",
+        "transaction_date": "2026-05-09",
+        "amount": "-84664.00",
+        "description": "PAYMT \u2014 ACME \u201cSERVICES\u201d CARLSON LLC",
+        "reference": "INV-2026-0071",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "2d5861b9-044f-50ed-a436-d847ca08cdfd",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "invoice_id": "8c22100e-e920-5de4-a8cf-eded3d7cc151",
+      "expected_invoice_ids": [
+        "8c22100e-e920-5de4-a8cf-eded3d7cc151",
+        "4a5c22f2-6b54-584a-a832-833f8bcef311",
+        "5c2c77fa-8503-5e5c-a686-e356ce6bacee"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0094",
+      "bank_line": {
+        "id": "f4f6ecc8-89b7-5038-9449-81e4adc8a1fb",
+        "transaction_date": "2026-05-31",
+        "amount": "-93770.00",
+        "description": "INV\u20132024\u2013001 \u2022 wire LIN-RASMUSSEN",
+        "reference": "INV-2026-0094",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "efdbfc40-f5f9-5956-8c3c-14141d6fcfc1",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "cb2e11af-6035-52bf-ad65-085ffc24216b",
+      "expected_invoice_ids": [
+        "cb2e11af-6035-52bf-ad65-085ffc24216b",
+        "8f075129-6ec9-5629-8fcd-9ab1b0eb3eee"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0043",
+      "bank_line": {
+        "id": "223c64bf-24d5-5c2e-bfd2-9a1c91bd6680",
+        "transaction_date": "2026-05-02",
+        "amount": "-49561.00",
+        "description": "INV\u20132024\u2013001 \u2022 wire BAKER, MASON AND W",
+        "reference": "INV-2026-0043",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "8ff4100c-4714-5e4a-a9c5-97ecc5e1431f",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "a1ad7823-4965-563d-8e1e-e5eec93a297a",
+      "expected_invoice_ids": [
+        "a1ad7823-4965-563d-8e1e-e5eec93a297a",
+        "1f0423fc-a667-5910-a8a7-b8844d384b74"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0031",
+      "bank_line": {
+        "id": "e341eb51-de65-561c-8717-42cda15b33c9",
+        "transaction_date": "2026-02-11",
+        "amount": "-109768.00",
+        "description": "INV\u20132024\u2013001 \u2022 wire EVANS, FOWLER AND ",
+        "reference": "INV-2026-0031",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "d2961a09-39d9-58e9-8bdb-a7266e241cd3",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "invoice_id": "ec289f53-af85-5649-923b-186e45dba116",
+      "expected_invoice_ids": [
+        "ec289f53-af85-5649-923b-186e45dba116",
+        "528b9dc4-de17-5e5c-befb-bf4193358df0"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0080",
+      "bank_line": {
+        "id": "cae0f809-08b6-58b4-ad1c-9f4d00271910",
+        "transaction_date": "2026-04-18",
+        "amount": "-99056.00",
+        "description": "INV\u20132024\u2013001 \u2022 wire HOUSE AND SONS",
+        "reference": "INV-2026-0080",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "b449d8f6-12ad-5718-8ba4-d456b09d152e",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "invoice_id": "33a9cab2-566e-50e0-8e06-33b4cd7ad9a9",
+      "expected_invoice_ids": [
+        "33a9cab2-566e-50e0-8e06-33b4cd7ad9a9",
+        "edab1b82-481b-5b2c-a6f4-614f84186f07"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0007",
+      "bank_line": {
+        "id": "e986f3af-9f1c-509e-a284-a5899e0c2332",
+        "transaction_date": "2026-04-23",
+        "amount": "-81065.00",
+        "description": "INV\u20132024\u2013001 \u2022 wire BRENNAN-GARRISON",
+        "reference": "INV-2026-0007",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "3a2ce17f-3b89-5dbd-9a23-5d8747574324",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "invoice_id": "1331c71f-ea12-59c7-8f4c-56f586f3ab54",
+      "expected_invoice_ids": [
+        "1331c71f-ea12-59c7-8f4c-56f586f3ab54"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0025",
+      "bank_line": {
+        "id": "9cbc3ab4-92bb-5844-90da-56cf98e7e647",
+        "transaction_date": "2026-04-20",
+        "amount": "-17936.00",
+        "description": "TRANSFERREF 8842 REID-DIAZ",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "e17398a6-2836-579f-a572-e614814333c2",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "invoice_id": "d17a10c9-5726-5cb6-ae13-d5e19ede973b",
+      "expected_invoice_ids": [
+        "d17a10c9-5726-5cb6-ae13-d5e19ede973b"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0046",
+      "bank_line": {
+        "id": "bd409c67-bfac-595a-a080-6e62a65eb2a5",
+        "transaction_date": "2026-04-07",
+        "amount": "-61742.00",
+        "description": "PAYMT \u2014 ACME \u201cSERVICES\u201d CLARK-ADAMS",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "4d0a7153-cd6e-518a-8074-ddacdc3273c9",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "d5d50830-e58c-59db-801f-76e49a77c72c",
+      "expected_invoice_ids": [
+        "d5d50830-e58c-59db-801f-76e49a77c72c"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0061",
+      "bank_line": {
+        "id": "26c06151-99cf-5d10-a709-95b30527dcda",
+        "transaction_date": "2026-05-28",
+        "amount": "-41274.00",
+        "description": "TRANSFERREF 8842 FARMER-RYAN",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "de50b2a2-ad0d-54e9-85b1-0398d42eef73",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "invoice_id": "528b9dc4-de17-5e5c-befb-bf4193358df0",
+      "expected_invoice_ids": [
+        "528b9dc4-de17-5e5c-befb-bf4193358df0"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0006",
+      "bank_line": {
+        "id": "f2b39c5b-76a5-53dd-bc49-965b75a4f135",
+        "transaction_date": "2026-02-25",
+        "amount": "-56753.00",
+        "description": "PAYMENT \u2013 vendor\u2019s invoice HERRERA AND SONS",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "7f7391d7-5e56-56cf-a0a1-fcf7a191d396",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "invoice_id": "c1c1d566-5e54-5e88-9906-9322d9d1bdeb",
+      "expected_invoice_ids": [
+        "c1c1d566-5e54-5e88-9906-9322d9d1bdeb"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0075",
+      "bank_line": {
+        "id": "335eb2d8-4e14-547c-9d6b-f2be3fe01b81",
+        "transaction_date": "2026-02-13",
+        "amount": "-26069.00",
+        "description": "PAYMENT \u2013 vendor\u2019s invoice BROWN",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "f50264ae-3418-576c-a711-15ad7d8935fd",
+      "tenant_id": "750f33f2-adc6-54df-8336-cdf01e0ada8a",
+      "invoice_id": "f4648b61-e7a2-513a-b72a-f5acbe0ebbd2",
+      "expected_invoice_ids": [
+        "f4648b61-e7a2-513a-b72a-f5acbe0ebbd2"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0023",
+      "bank_line": {
+        "id": "6472f104-51f7-504b-acd5-ac91d2ece4fa",
+        "transaction_date": "2026-03-20",
+        "amount": "-14484.00",
+        "description": "TRANSFERREF 8842 VALDEZ, LUCAS AND ",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "08085fb6-53e5-51f7-963b-b8447ccb135c",
+      "tenant_id": "ddc7b39c-0bc1-57dc-b96c-1359f4d34150",
+      "invoice_id": "926a0c9a-39a6-5e53-aa71-751f2d7f594c",
+      "expected_invoice_ids": [
+        "926a0c9a-39a6-5e53-aa71-751f2d7f594c"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "timing_difference"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0034",
+      "bank_line": {
+        "id": "3f7cd666-e41b-5264-a803-f1e175056d32",
+        "transaction_date": "2026-04-29",
+        "amount": "-13385.00",
+        "description": "MITCHELL-KIM",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "5706442f-c106-5fd2-820d-c8f8330051f0",
+      "tenant_id": "ddc7b39c-0bc1-57dc-b96c-1359f4d34150",
+      "invoice_id": "e9b982cc-6df1-5599-8995-28c151e409e3",
+      "expected_invoice_ids": [
+        "e9b982cc-6df1-5599-8995-28c151e409e3"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "timing_difference"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0040",
+      "bank_line": {
+        "id": "5779b0e1-d1ba-5a71-86a5-7272f657cfd3",
+        "transaction_date": "2026-05-31",
+        "amount": "-43228.00",
+        "description": "POWELL PLC",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "9df22224-0fd2-5f53-bb1e-004dc4410cb5",
+      "tenant_id": "ddc7b39c-0bc1-57dc-b96c-1359f4d34150",
+      "invoice_id": "b0913d85-80bb-59b0-8b98-c64b75424d13",
+      "expected_invoice_ids": [
+        "b0913d85-80bb-59b0-8b98-c64b75424d13"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0068",
+      "bank_line": {
+        "id": "0e401579-04a2-5cc9-8691-06cc2d4dc1b3",
+        "transaction_date": "2026-04-13",
+        "amount": "-50727.00",
+        "description": "PAYMENT \u2013 vendor\u2019s invoice WOODS, CALHOUN AND",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "71caca5f-e4b3-5b93-b877-c0a1c0814c7d",
+      "tenant_id": "ddc7b39c-0bc1-57dc-b96c-1359f4d34150",
+      "invoice_id": "1650f5d3-19d7-5225-b320-8e79b12ea1fd",
+      "expected_invoice_ids": [
+        "1650f5d3-19d7-5225-b320-8e79b12ea1fd"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0084",
+      "bank_line": {
+        "id": "06e08a16-6add-5809-b453-7ab050528223",
+        "transaction_date": "2026-05-02",
+        "amount": "-4954.00",
+        "description": "INV\u20132024\u2013001 \u2022 wire WHEELER, HARVEY AN",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "b5960108-ebbc-5fbc-a97f-367e10e784d1",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "invoice_id": "8e3cb293-d0a9-5467-a016-36a479be8877",
+      "expected_invoice_ids": [
+        "8e3cb293-d0a9-5467-a016-36a479be8877"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0089",
+      "bank_line": {
+        "id": "4bdeb886-7f2b-5517-91f9-cc7c6dff0877",
+        "transaction_date": "2026-03-26",
+        "amount": "-73201.00",
+        "description": "INV\u20132024\u2013001 \u2022 wire HOFFMAN-RODRIGUEZ",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "10d00960-a3d9-5204-86ca-6ba70f493d32",
+      "tenant_id": "e2864cb5-a413-56c5-b6cb-99892f47a7e0",
+      "invoice_id": "451ef136-cb71-51e0-ae56-2ecc9959d883",
+      "expected_invoice_ids": [
+        "451ef136-cb71-51e0-ae56-2ecc9959d883"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "truncated_reference",
+        "garbled_vendor_name",
+        "non_ascii_description"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0082",
+      "bank_line": {
+        "id": "b500164b-78eb-5c8d-b7d6-afb4bbbc7b4f",
+        "transaction_date": "2026-05-07",
+        "amount": "-38487.00",
+        "description": "TRANSFERREF 8842 HENDERSON, HILL AN",
+        "reference": "PAYMT REF INV-20",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "d757ee67-4cf7-5715-b4c8-04e8c98a0134",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "invoice_id": "d33e5266-53e7-54e6-b55f-b78922acc5ad",
+      "expected_invoice_ids": [
+        "d33e5266-53e7-54e6-b55f-b78922acc5ad",
+        "8d0df575-ee8b-5c81-8dea-398853e1579f",
+        "87977301-e335-510d-b857-044d314cfa47"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0087",
+      "bank_line": {
+        "id": "fa3d0db0-ba29-5ef0-9d90-f5b417b646e1",
+        "transaction_date": "2026-03-16",
+        "amount": "-166742.00",
+        "description": "JONES-GENTRY",
+        "reference": "INV-2026-0087",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "c796b24d-498e-5b24-9512-34eb91d8d9c5",
+      "tenant_id": "5e8262da-cf93-5812-91f0-1853730eed6f",
+      "invoice_id": "d160dd3a-3a47-53cb-b784-12a91104cf1d",
+      "expected_invoice_ids": [
+        "d160dd3a-3a47-53cb-b784-12a91104cf1d",
+        "c1fc88e7-0e7e-5c44-8163-e9c6d3ec2fd1",
+        "abea1784-6b6c-5a8d-9aed-72681ae35e1e"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0035",
+      "bank_line": {
+        "id": "300863b6-0900-519b-b0a1-98337be301f1",
+        "transaction_date": "2026-05-28",
+        "amount": "-148811.00",
+        "description": "BAKER, WILLIAMS AN",
+        "reference": "INV-2026-0035",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "8c09d3f7-74a4-5830-8f12-f799dfd2636f",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "e313d0ad-82f9-5734-b233-aec9186ce72c",
+      "expected_invoice_ids": [
+        "e313d0ad-82f9-5734-b233-aec9186ce72c",
+        "d3f3caa6-cbd5-550f-98a1-3078adeef84f",
+        "15e28912-dcdb-5923-91af-7a457f351609"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name"
+      ],
+      "payment_reference_full": "PAYMT REF INV20260046",
+      "bank_line": {
+        "id": "fc6b3c0f-55d9-5da4-9080-60115177717f",
+        "transaction_date": "2026-06-08",
+        "amount": "-139456.00",
+        "description": "CLARK-ADAMS",
+        "reference": "INV20260046",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "50779d54-80da-5240-a730-25f7434095ab",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "a601081a-144a-5025-bb92-e4ed84653453",
+      "expected_invoice_ids": [
+        "a601081a-144a-5025-bb92-e4ed84653453",
+        "d608887c-3792-5a8a-9283-66cd18e5c2c6",
+        "ac4e7432-9558-5ac4-af40-6e6f8b92c577"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0014",
+      "bank_line": {
+        "id": "4c38ec72-50dc-5be8-aa03-118cee7ac10c",
+        "transaction_date": "2026-06-09",
+        "amount": "-136685.00",
+        "description": "CARLSON-MCDONALD",
+        "reference": "INV-2026-0014",
+        "currency": "USD"
+      }
+    },
+    {
+      "pair_id": "7f6830fe-141e-580c-9bda-7d2d37ae2bcb",
+      "tenant_id": "2e679655-21c4-582d-a6e2-47b010e2946c",
+      "invoice_id": "b61cc12b-f9ef-51b5-a395-334c62b14ac3",
+      "expected_invoice_ids": [
+        "b61cc12b-f9ef-51b5-a395-334c62b14ac3",
+        "ac4e7432-9558-5ac4-af40-6e6f8b92c577",
+        "26e2e888-0623-5f52-961d-b7eb404106de"
+      ],
+      "expected_match_types": [
+        "exact",
+        "fuzzy"
+      ],
+      "data_quality_issues": [
+        "bundled_payment",
+        "garbled_vendor_name"
+      ],
+      "payment_reference_full": "PAYMT REF INV-2026-0042",
+      "bank_line": {
+        "id": "42672ed8-81f9-54c4-a492-9552cb58bd29",
+        "transaction_date": "2026-06-10",
+        "amount": "-179048.00",
+        "description": "DENNIS",
+        "reference": "INV-2026-0042",
+        "currency": "USD"
+      }
+    }
+  ]
+}

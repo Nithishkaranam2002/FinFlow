@@ -14,6 +14,7 @@ from sqlalchemy import select
 from agents.base import BaseAgent
 from agents.state import FinFlowState, min_confidence_score
 from core.database import async_session_factory
+from core.observability import trace_agent_step
 from core.tenant import set_current_tenant_id
 from models.invoice import Invoice, InvoiceStatus
 from models.tenant import Tenant
@@ -27,7 +28,13 @@ from services.notifications import (
 )
 
 logger = structlog.get_logger(__name__)
-_agent = BaseAgent()
+
+
+class ApprovalAgent(BaseAgent):
+    agent_name = "approval"
+
+
+_agent = ApprovalAgent()
 
 ESCALATION_HOURS = 48
 MAX_ESCALATIONS = 3
@@ -55,6 +62,7 @@ async def _find_users_for_role(tenant_id: str, required_role: str) -> list[User]
         return list(result.scalars().all())
 
 
+@trace_agent_step("approval")
 async def route_approval_node(state: FinFlowState) -> dict:
     """Resolve approval policy and identify approvers for this invoice."""
     update = _agent.log_step(state, "route_approval")
@@ -122,6 +130,7 @@ async def route_approval_node(state: FinFlowState) -> dict:
     }
 
 
+@trace_agent_step("approval")
 async def send_approval_notification_node(state: FinFlowState) -> dict:
     """Notify approvers and mark the invoice as pending approval."""
     update = _agent.log_step(state, "send_approval_notification")
@@ -189,6 +198,7 @@ async def send_approval_notification_node(state: FinFlowState) -> dict:
     }
 
 
+@trace_agent_step("approval")
 async def await_approval_node(state: FinFlowState) -> dict:
     """Human-in-the-loop interrupt; resumes when approver calls the API."""
     update = _agent.log_step(state, "await_approval")

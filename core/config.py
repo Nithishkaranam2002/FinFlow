@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     # LiteLLM
     litellm_master_key: str = "sk-finflow-master"
     primary_model: str = "claude-3-5-haiku-20241022"
+    standard_model: str = "claude-3-5-sonnet-20241022"
     premium_model: str = "claude-opus-4-5-20251101"
     fallback_model: str = "gpt-4o-mini"
 
@@ -61,6 +62,10 @@ class Settings(BaseSettings):
     email_from: str = "noreply@finflow.dev"
     app_base_url: str = "http://localhost:8000"
     slack_webhook_url: str = ""
+
+    # Qdrant
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: str = ""
 
     # JWT auth
     jwt_algorithm: str = "HS256"

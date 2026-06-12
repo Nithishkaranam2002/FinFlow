@@ -26,6 +26,10 @@ celery_app.conf.beat_schedule = {
         "task": "workers.approval_tasks.run_escalation_check",
         "schedule": crontab(minute=0),
     },
+    "extraction-quality-hourly": {
+        "task": "workers.extraction_quality_tasks.run_extraction_quality_scores",
+        "schedule": crontab(minute=15),
+    },
 }
 
 celery_app.autodiscover_tasks(["workers"])

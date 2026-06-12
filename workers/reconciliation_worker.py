@@ -10,17 +10,18 @@ import uuid
 import structlog
 from aiokafka import AIOKafkaConsumer
 
+from agents.reconciliation_agent import run_reconciliation_pipeline
 from core.config import get_settings
 from core.kafka import (
     TOPIC_RECONCILIATION_COMPLETED,
     TOPIC_RECONCILIATION_STARTED,
     KafkaProducerManager,
 )
+from core.tenant import set_current_tenant_id
 
 logger = structlog.get_logger(__name__)
 
 CONSUMER_GROUP = "finflow-reconciliation-workers"
-MOCK_MATCH_RATE = 0.85
 
 
 async def process_reconciliation_started(
@@ -30,36 +31,53 @@ async def process_reconciliation_started(
     bank_statement_id = message_value.get("bank_statement_id")
     tenant_id = message_value.get("tenant_id")
 
+    if not bank_statement_id or not tenant_id:
+        logger.warning("reconciliation_message_missing_fields", payload=message_value)
+        return
+
+    set_current_tenant_id(uuid.UUID(str(tenant_id)))
     logger.info(
         "reconciliation_started_received",
         bank_statement_id=bank_statement_id,
         tenant_id=tenant_id,
     )
 
-    total_lines = int(message_value.get("total_lines", 100))
-    matched_lines = int(total_lines * MOCK_MATCH_RATE)
+    try:
+        result = await run_reconciliation_pipeline(
+            statement_id=str(bank_statement_id),
+            tenant_id=str(tenant_id),
+        )
+    except Exception:
+        logger.exception(
+            "reconciliation_pipeline_failed",
+            bank_statement_id=bank_statement_id,
+            tenant_id=tenant_id,
+        )
+        raise
 
-    result = {
+    report = result.get("report") or {}
+    completion = {
         "bank_statement_id": bank_statement_id,
         "tenant_id": tenant_id,
         "reconciliation_id": str(uuid.uuid4()),
-        "match_rate": MOCK_MATCH_RATE,
-        "total_lines": total_lines,
-        "matched_lines": matched_lines,
-        "unmatched_lines": total_lines - matched_lines,
+        "match_rate": report.get("match_rate", 0.0),
+        "total_lines": report.get("total_lines", message_value.get("total_lines", 0)),
+        "matched_lines": report.get("matched_lines", 0),
+        "unmatched_lines": report.get("unmatched_lines", 0),
         "status": "completed",
-        "engine": "stub-v1",
+        "engine": "reconciliation-agent-v1",
+        "summary": report,
     }
 
     await producer.send(
         TOPIC_RECONCILIATION_COMPLETED,
-        result,
-        key=str(bank_statement_id) if bank_statement_id else None,
+        completion,
+        key=str(bank_statement_id),
     )
     logger.info(
         "reconciliation_completed_published",
         bank_statement_id=bank_statement_id,
-        match_rate=MOCK_MATCH_RATE,
+        match_rate=completion["match_rate"],
     )
 
 

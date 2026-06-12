@@ -8,10 +8,15 @@ from models.invoice import Invoice, InvoiceStatus
 from models.reconciliation import MatchType, ReconciliationMatch
 from schemas.dashboard import (
     DashboardStatsResponse,
+    LLMCostByAgent,
+    LLMCostByDay,
+    LLMCostByModel,
+    LLMCostSummaryResponse,
     MatchRateDataPoint,
     MatchRateResponse,
     StatusCount,
 )
+from core.llm_gateway import CostTracker
 
 router = APIRouter(tags=["dashboard"])
 
@@ -101,7 +106,14 @@ async def get_dashboard_stats(
         )
     )
     month_count = month_count_result.scalar_one()
-    cost_per_invoice_usd = 0.12
+    cost_tracker = CostTracker()
+    month_start_date = month_start.date()
+    today = date.today()
+    cost_summary = await cost_tracker.get_cost_summary(
+        current_user.tenant_id,
+        (month_start_date, today),
+    )
+    cost_per_invoice_usd = cost_summary["average_cost_per_invoice_usd"]
 
     return DashboardStatsResponse(
         invoices_today=invoices_today,
@@ -155,3 +167,33 @@ async def get_match_rate(
         )
 
     return MatchRateResponse(data_points=data_points)
+
+
+@router.get("/llm-costs", response_model=LLMCostSummaryResponse)
+async def get_llm_costs(
+    current_user: ApClerkUser,
+) -> LLMCostSummaryResponse:
+    end_date = date.today()
+    start_date = end_date - timedelta(days=29)
+    summary = await CostTracker().get_cost_summary(
+        current_user.tenant_id,
+        (start_date, end_date),
+    )
+    return LLMCostSummaryResponse(
+        total_cost_usd=summary["total_cost_usd"],
+        total_calls=summary["total_calls"],
+        total_input_tokens=summary["total_input_tokens"],
+        total_output_tokens=summary["total_output_tokens"],
+        average_cost_per_invoice_usd=summary["average_cost_per_invoice_usd"],
+        invoice_count=summary["invoice_count"],
+        cost_by_day=[
+            LLMCostByDay(
+                date=date.fromisoformat(item["date"]),
+                cost_usd=item["cost_usd"],
+                calls=item["calls"],
+            )
+            for item in summary["cost_by_day"]
+        ],
+        cost_by_model=[LLMCostByModel(**item) for item in summary["cost_by_model"]],
+        cost_by_agent=[LLMCostByAgent(**item) for item in summary["cost_by_agent"]],
+    )

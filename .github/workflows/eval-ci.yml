@@ -1,0 +1,166 @@
+name: FinFlow AI Eval CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-evals:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: finflow
+          POSTGRES_PASSWORD: finflow123
+          POSTGRES_DB: finflow_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U finflow -d finflow_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      zookeeper:
+        image: confluentinc/cp-zookeeper:7.6.1
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_TICK_TIME: 2000
+        ports:
+          - 2181:2181
+
+      kafka:
+        image: confluentinc/cp-kafka:7.6.1
+        env:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+        ports:
+          - 9092:9092
+
+      qdrant:
+        image: qdrant/qdrant:v1.13.2
+        ports:
+          - 6333:6333
+          - 6334:6334
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://finflow:finflow123@localhost:5432/finflow_db
+      DATABASE_SYNC_URL: postgresql://finflow:finflow123@localhost:5432/finflow_db
+      REDIS_URL: redis://localhost:6379
+      KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+      QDRANT_URL: http://localhost:6333
+      APP_ENV: test
+      DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGFUSE_PUBLIC_KEY: ""
+      LANGFUSE_SECRET_KEY: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Wait for Kafka
+        run: |
+          for i in {1..30}; do
+            if (echo > /dev/tcp/localhost/9092) >/dev/null 2>&1; then
+              echo "Kafka is ready"
+              exit 0
+            fi
+            echo "Waiting for Kafka..."
+            sleep 3
+          done
+          echo "Kafka did not become ready in time"
+          exit 1
+
+      - name: Run migrations
+        run: uv run alembic upgrade head
+
+      - name: Generate synthetic data
+        run: uv run python scripts/generate_synthetic_data.py
+
+      - name: Generate golden eval sets
+        run: |
+          uv run python evals/golden_invoices/generate_golden_set.py
+          uv run python evals/golden_reconciliation/generate_golden_pairs.py
+
+      - name: Seed database
+        run: uv run python scripts/seed_database.py --reset
+
+      - name: Run extraction evals
+        run: uv run pytest evals/test_extraction.py -v --tb=short --github-actions-annotate-failures
+        continue-on-error: true
+        id: extraction_eval
+
+      - name: Run reconciliation evals
+        run: uv run pytest evals/test_reconciliation.py -v --tb=short --github-actions-annotate-failures
+        continue-on-error: true
+        id: reconciliation_eval
+
+      - name: Build eval PR comment
+        if: always()
+        run: uv run python scripts/post_eval_comment.py || true
+
+      - name: Post PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'evals/reports/pr_comment.md';
+            if (!fs.existsSync(path)) {
+              core.info('No eval comment file found.');
+              return;
+            }
+            const body = fs.readFileSync(path, 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });
+
+      - name: Enforce quality gates
+        run: |
+          if [ "${{ steps.extraction_eval.outcome }}" != "success" ] || [ "${{ steps.reconciliation_eval.outcome }}" != "success" ]; then
+            echo "AI eval quality gates failed."
+            exit 1
+          fi
+
+      - name: Upload eval reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finflow-eval-reports
+          path: evals/reports/

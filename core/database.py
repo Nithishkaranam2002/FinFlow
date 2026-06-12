@@ -37,8 +37,9 @@ async_session_factory = async_sessionmaker(
 def _register_tenant_scoping() -> None:
     from models.audit import AuditLog
     from models.invoice import Invoice
+    from models.llm_log import LLMCallLog
     from models.payment import Payment
-    from models.reconciliation import ReconciliationMatch
+    from models.reconciliation import BankStatement, BankStatementLine, ReconciliationMatch
     from models.user import User
     from models.vendor import Vendor
 
@@ -48,6 +49,9 @@ def _register_tenant_scoping() -> None:
         Invoice,
         Payment,
         ReconciliationMatch,
+        BankStatement,
+        BankStatementLine,
+        LLMCallLog,
         AuditLog,
     )
 

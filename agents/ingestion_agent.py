@@ -10,8 +10,6 @@ from decimal import Decimal
 from typing import Any
 
 import structlog
-from langchain_core.messages import HumanMessage
-from langfuse import get_client
 from pydantic import ValidationError
 from sqlalchemy import select
 
@@ -19,6 +17,8 @@ from agents.base import BaseAgent
 from agents.state import FinFlowState
 from core.database import async_session_factory
 from core.kafka import TOPIC_INVOICE_EXTRACTED, kafka_producer_manager
+from core.observability import extract_trace_ids, get_langfuse_client, trace_agent_step
+from langfuse import propagate_attributes
 from models.invoice import Invoice, InvoiceStatus
 from schemas.invoice import ExtractedInvoiceDataWithConfidence
 from services.extraction import (
@@ -26,6 +26,8 @@ from services.extraction import (
     encode_image_base64,
     prepare_document_for_vision,
 )
+from services.extraction_quality import persist_extraction_trace_metadata
+from services.mem0_corrections import fetch_vendor_correction_examples
 
 logger = structlog.get_logger(__name__)
 
@@ -65,17 +67,30 @@ Return ONLY corrected JSON matching the schema exactly:
 
 
 class IngestionAgent(BaseAgent):
-    @property
-    def vision_llm(self):
-        litellm_model = f"anthropic/{VISION_MODEL}"
-        return self._build_chat_model(litellm_model)
+    agent_name = "ingestion"
 
-    def build_extraction_prompt(self) -> str:
+    def build_extraction_prompt(
+        self,
+        extraction_prior: dict[str, Any] | None = None,
+        few_shot_examples: list[dict[str, Any]] | None = None,
+    ) -> str:
         schema = json.dumps(
             ExtractedInvoiceDataWithConfidence.model_json_schema(),
             indent=2,
         )
-        return EXTRACTION_PROMPT.format(schema=schema)
+        prompt = EXTRACTION_PROMPT.format(schema=schema)
+        if few_shot_examples:
+            prompt += (
+                "\n\nFew-shot correction examples from human reviewers for this vendor "
+                "(apply formatting patterns, not literal values unless the document matches):\n"
+                f"{json.dumps(few_shot_examples, indent=2)}"
+            )
+        if extraction_prior:
+            prompt += (
+                "\n\nPrior extraction pattern from a very similar document for this vendor "
+                f"(use as a strong prior, not ground truth):\n{json.dumps(extraction_prior, indent=2)}"
+            )
+        return prompt
 
     def build_correction_prompt(self, errors: str) -> str:
         schema = json.dumps(
@@ -90,24 +105,53 @@ class IngestionAgent(BaseAgent):
         prompt: str,
         image_bytes: bytes,
         mime_type: str,
-        callbacks: list | None = None,
+        tenant_id: str,
+        invoice_id: str,
+        vendor_id: str | None = None,
+        document_bytes: bytes | None = None,
+        extraction_prior: dict[str, Any] | None = None,
     ) -> str:
         image_b64 = encode_image_base64(image_bytes)
-        media_type = mime_type
-        message = HumanMessage(
-            content=[
-                {"type": "text", "text": prompt},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{media_type};base64,{image_b64}"},
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{mime_type};base64,{image_b64}"},
+                    },
+                ],
+            }
+        ]
+
+        if document_bytes and vendor_id:
+            response = await self.gateway.acompletion_with_semantic_cache(
+                messages=messages,
+                task_type="vision_extraction",
+                agent_name=self.agent_name,
+                tenant_id=tenant_id,
+                vendor_id=vendor_id,
+                document_bytes=document_bytes,
+                invoice_id=invoice_id,
+                context={
+                    "is_vision": True,
+                    "known_vendor": True,
+                    "first_time_vendor": False,
+                    "vendor_confidence_hint": 0.95 if extraction_prior else 0.0,
                 },
-            ]
-        )
-        response = await self.vision_llm.ainvoke(
-            [message],
-            config={"callbacks": callbacks or [self.langfuse_callback]},
-        )
-        return str(response.content)
+            )
+        else:
+            response = await self.invoke_llm_with_routing_context(
+                messages,
+                task_type="vision_extraction",
+                tenant_id=tenant_id,
+                invoice_id=invoice_id,
+                vendor_id=vendor_id,
+                is_vision=True,
+            )
+
+        return response.content
 
     def parse_extraction_response(self, raw_response: str) -> ExtractedInvoiceDataWithConfidence:
         payload = _extract_json_object(raw_response)
@@ -120,57 +164,114 @@ class IngestionAgent(BaseAgent):
         mime_type: str,
         invoice_id: str,
         tenant_id: str,
+        vendor_id: str | None = None,
+        raw_file_bytes: bytes | None = None,
     ) -> tuple[ExtractedInvoiceDataWithConfidence, str, dict[str, Any]]:
-        prompt = self.build_extraction_prompt()
-        langfuse = get_client()
+        extraction_prior: dict[str, Any] | None = None
+        cache_hit: dict[str, Any] | None = None
+        if vendor_id and raw_file_bytes:
+            cache_hit = await self.gateway.semantic_cache.lookup(
+                tenant_id=tenant_id,
+                vendor_id=vendor_id,
+                document_bytes=raw_file_bytes,
+            )
+            if cache_hit:
+                extraction_prior = cache_hit.get("extraction_pattern")
+
+        few_shot_examples: list[dict[str, Any]] = []
+        if vendor_id:
+            few_shot_examples = await fetch_vendor_correction_examples(
+                tenant_id,
+                vendor_id,
+            )
+
+        prompt = self.build_extraction_prompt(extraction_prior, few_shot_examples)
+        langfuse = get_langfuse_client()
         trace_metadata = {
             "invoice_id": invoice_id,
             "tenant_id": tenant_id,
-            "model": VISION_MODEL,
+            "agent_name": self.agent_name,
+            "gateway": True,
         }
 
-        with langfuse.start_as_current_observation(
-            as_type="generation",
-            name="invoice_vision_extraction",
-            model=VISION_MODEL,
-            input={"prompt": prompt, "mime_type": mime_type},
+        with propagate_attributes(
+            tags=[
+                f"tenant_id:{tenant_id}",
+                f"invoice_id:{invoice_id}",
+                f"agent_name:{self.agent_name}",
+            ],
             metadata=trace_metadata,
-        ) as generation:
-            raw_response = await self.call_vision_llm(
-                prompt=prompt,
-                image_bytes=image_bytes,
-                mime_type=mime_type,
-            )
-            try:
-                parsed = self.parse_extraction_response(raw_response)
-            except ValidationError as first_error:
-                correction_prompt = self.build_correction_prompt(str(first_error))
+            trace_name="ingestion.invoice_vision_extraction",
+        ):
+            with langfuse.start_as_current_observation(
+                as_type="generation",
+                name="invoice_vision_extraction",
+                model=VISION_MODEL,
+                input={"prompt": prompt, "mime_type": mime_type},
+                metadata=trace_metadata,
+            ) as generation:
                 raw_response = await self.call_vision_llm(
-                    prompt=correction_prompt,
+                    prompt=prompt,
                     image_bytes=image_bytes,
                     mime_type=mime_type,
+                    tenant_id=tenant_id,
+                    invoice_id=invoice_id,
+                    vendor_id=vendor_id,
+                    document_bytes=raw_file_bytes or image_bytes,
                 )
-                parsed = self.parse_extraction_response(raw_response)
+                try:
+                    parsed = self.parse_extraction_response(raw_response)
+                except ValidationError as first_error:
+                    correction_prompt = self.build_correction_prompt(str(first_error))
+                    raw_response = await self.call_vision_llm(
+                        prompt=correction_prompt,
+                        image_bytes=image_bytes,
+                        mime_type=mime_type,
+                        tenant_id=tenant_id,
+                        invoice_id=invoice_id,
+                        vendor_id=vendor_id,
+                        document_bytes=raw_file_bytes or image_bytes,
+                    )
+                    parsed = self.parse_extraction_response(raw_response)
 
-            confidence_scores = parsed.confidence_map()
-            overall_confidence = calculate_overall_confidence(confidence_scores)
-            generation.update(
-                output={
-                    "raw_response": raw_response,
-                    "parsed": parsed.model_dump(mode="json"),
+                confidence_scores = parsed.confidence_map()
+                overall_confidence = calculate_overall_confidence(confidence_scores)
+                if extraction_prior:
+                    boost = float((cache_hit or {}).get("confidence_boost", 0.05))
+                    overall_confidence = min(1.0, round(overall_confidence + boost, 4))
+                    for field in confidence_scores:
+                        confidence_scores[field] = min(
+                            1.0, round(confidence_scores[field] + boost / 2, 4)
+                        )
+                if vendor_id and raw_file_bytes:
+                    await self.gateway.store_extraction_pattern(
+                        tenant_id=tenant_id,
+                        vendor_id=vendor_id,
+                        document_bytes=raw_file_bytes,
+                        extraction_pattern=parsed.model_dump(mode="json"),
+                    )
+
+                trace_ids = extract_trace_ids()
+                generation.update(
+                    output={
+                        "raw_response": raw_response,
+                        "parsed": parsed.model_dump(mode="json"),
+                        "confidence_scores": confidence_scores,
+                        "overall_confidence": overall_confidence,
+                    },
+                    metadata={
+                        **trace_metadata,
+                        "overall_confidence": overall_confidence,
+                        **trace_ids,
+                    },
+                )
+                langfuse.flush()
+                return parsed, raw_response, {
                     "confidence_scores": confidence_scores,
                     "overall_confidence": overall_confidence,
-                },
-                metadata={
-                    **trace_metadata,
-                    "overall_confidence": overall_confidence,
-                },
-            )
-            langfuse.flush()
-            return parsed, raw_response, {
-                "confidence_scores": confidence_scores,
-                "overall_confidence": overall_confidence,
-            }
+                    "langfuse_trace_id": trace_ids.get("trace_id"),
+                    "langfuse_observation_id": trace_ids.get("observation_id"),
+                }
 
 
 _agent = IngestionAgent()
@@ -258,6 +359,7 @@ async def _persist_invoice_extraction(
         await session.commit()
 
 
+@trace_agent_step("ingestion")
 async def extract_invoice_node(state: FinFlowState) -> dict:
     update = _agent.log_step(state, "extract")
     invoice_id = state["invoice_id"]
@@ -293,6 +395,8 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
             mime_type=mime_type,
             invoice_id=invoice_id,
             tenant_id=tenant_id,
+            vendor_id=(state.get("metadata") or {}).get("vendor_id"),
+            raw_file_bytes=raw_file_bytes,
         )
     except (DocumentPreparationError, ValidationError, json.JSONDecodeError) as exc:
         logger.exception("invoice_extraction_failed", invoice_id=invoice_id)
@@ -330,6 +434,16 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
         requires_human_review=requires_review,
     )
 
+    async with async_session_factory() as session:
+        await persist_extraction_trace_metadata(
+            session,
+            invoice_id=uuid.UUID(invoice_id),
+            tenant_id=uuid.UUID(tenant_id),
+            trace_id=metrics.get("langfuse_trace_id"),
+            observation_id=metrics.get("langfuse_observation_id"),
+        )
+        await session.commit()
+
     if kafka_producer_manager.is_started:
         await kafka_producer_manager.send(
             TOPIC_INVOICE_EXTRACTED,
@@ -364,6 +478,8 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
             **(state.get("metadata") or {}),
             "overall_confidence": overall_confidence,
             "vision_model": VISION_MODEL,
+            "llm_gateway": True,
+            "langfuse_trace_id": metrics.get("langfuse_trace_id"),
         },
     }
 

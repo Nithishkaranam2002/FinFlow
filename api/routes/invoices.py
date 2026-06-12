@@ -13,6 +13,7 @@ from models.invoice import Invoice, InvoiceStatus
 from models.vendor import Vendor
 from schemas.invoice import (
     AuditLogResponse,
+    ExtractionCorrectionRequest,
     InvoiceApproveRequest,
     InvoiceListResponse,
     InvoiceRejectRequest,
@@ -20,7 +21,9 @@ from schemas.invoice import (
     InvoiceUploadResponse,
 )
 from services.audit import log_audit_event
+from services.extraction_quality import log_human_correction_score
 from services.graph_resume import resume_invoice_approval
+from services.mem0_corrections import store_vendor_correction_pattern
 
 router = APIRouter(tags=["invoices"])
 
@@ -272,6 +275,72 @@ async def reject_invoice(
         )
     )
     return result.scalar_one()
+
+
+@router.patch("/{invoice_id}/correct-extraction", response_model=InvoiceResponse)
+async def correct_invoice_extraction(
+    invoice_id: uuid.UUID,
+    payload: ExtractionCorrectionRequest,
+    request: Request,
+    db: DbSession,
+    current_user: ApClerkUser,
+) -> Invoice:
+    result = await db.execute(
+        select(Invoice).where(
+            Invoice.id == invoice_id,
+            Invoice.tenant_id == current_user.tenant_id,
+        )
+    )
+    invoice = result.scalar_one_or_none()
+    if invoice is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+
+    old_extracted = dict(invoice.extracted_data or {})
+    corrected = {**old_extracted, **payload.corrections}
+
+    if "total_amount" in payload.corrections:
+        invoice.amount = Decimal(str(payload.corrections["total_amount"]))
+    if "invoice_number" in payload.corrections:
+        invoice.invoice_number = str(payload.corrections["invoice_number"])
+    if "due_date" in payload.corrections and payload.corrections["due_date"]:
+        from datetime import date as date_type
+
+        invoice.due_date = date_type.fromisoformat(str(payload.corrections["due_date"]))
+    if "currency" in payload.corrections:
+        invoice.currency = str(payload.corrections["currency"]).upper()[:3]
+    if "line_items" in payload.corrections:
+        invoice.line_items = payload.corrections["line_items"]
+
+    invoice.extracted_data = corrected
+    await log_human_correction_score(
+        invoice=invoice,
+        corrected_fields=list(payload.corrections.keys()),
+        corrections=payload.corrections,
+    )
+
+    await store_vendor_correction_pattern(
+        tenant_id=str(current_user.tenant_id),
+        vendor_id=str(invoice.vendor_id),
+        corrections=payload.corrections,
+        corrected_data=corrected,
+    )
+
+    await log_audit_event(
+        db,
+        tenant_id=current_user.tenant_id,
+        entity_type="invoice",
+        entity_id=invoice.id,
+        action="extraction_corrected",
+        actor_id=current_user.id,
+        actor_role=current_user.role.value,
+        old_value={"extracted_data": old_extracted},
+        new_value={"extracted_data": corrected, "corrections": payload.corrections},
+        reason=payload.notes,
+        ip_address=request.client.host if request.client else None,
+    )
+    await db.commit()
+    await db.refresh(invoice)
+    return invoice
 
 
 @router.get("/{invoice_id}/audit-trail", response_model=list[AuditLogResponse])

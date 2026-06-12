@@ -50,6 +50,7 @@ dependencies = [
     "tenacity>=9.0.0",
     "httpx>=0.28.1",
     "resend>=2.6.0",
+    "qdrant-client>=1.12.1",
 ]
 
 [dependency-groups]
@@ -57,6 +58,7 @@ dev = [
     "deepeval>=2.1.6",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.0",
+    "pytest-github-actions-annotate-failures>=0.3.0",
 ]
 
 [build-system]
@@ -68,4 +70,8 @@ packages = ["agents", "api", "core", "models", "schemas", "services", "workers"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests", "evals"]
+addopts = "-ra"
+markers = [
+    "eval: AI quality evaluation tests",
+]

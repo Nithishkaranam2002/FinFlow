@@ -77,7 +77,12 @@ async def human_review_node(state: FinFlowState) -> dict:
 
 
 async def schedule_payment_node(state: FinFlowState) -> dict:
+    from agents.payment_agent import enrich_payment_metadata_node
+
+    memo_update = await enrich_payment_metadata_node(state)
     update = _agent.log_step(state, "schedule_payment")
+    update["step_history"] = memo_update.get("step_history", []) + update.get("step_history", [])
+    state = {**state, **memo_update}
     if state.get("approval_status") != "approved":
         return {
             **update,
@@ -92,8 +97,10 @@ async def schedule_payment_node(state: FinFlowState) -> dict:
         "approval_status": "approved",
         "metadata": {
             **(state.get("metadata") or {}),
+            **(memo_update.get("metadata") or {}),
             "payment_scheduled": True,
         },
+        "step_history": (memo_update.get("step_history") or []) + (update.get("step_history") or []),
     }
 
 
