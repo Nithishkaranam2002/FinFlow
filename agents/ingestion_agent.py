@@ -22,6 +22,7 @@ from core.observability import extract_trace_ids, get_langfuse_client, trace_age
 from langfuse import propagate_attributes
 from models.invoice import Invoice, InvoiceStatus
 from schemas.invoice import ExtractedInvoiceDataWithConfidence
+from services.audit import log_audit_event
 from services.extraction import (
     DocumentPreparationError,
     encode_image_base64,
@@ -232,8 +233,15 @@ class IngestionAgent(BaseAgent):
                         vendor_id=vendor_id,
                         document_bytes=raw_file_bytes or image_bytes,
                     )
-                    parsed = self.parse_extraction_response(raw_response)
+                    try:
+                        parsed = self.parse_extraction_response(raw_response)
+                    except ValidationError as second_error:
+                        return None, raw_response, _validation_fallback_metrics(
+                            raw_response,
+                            str(second_error),
+                        )
 
+                parsed, line_item_notes = _adjust_line_item_confidence(parsed)
                 confidence_scores = parsed.confidence_map()
                 overall_confidence = calculate_overall_confidence(confidence_scores)
                 if extraction_prior:
@@ -269,6 +277,7 @@ class IngestionAgent(BaseAgent):
                 return parsed, raw_response, {
                     "confidence_scores": confidence_scores,
                     "overall_confidence": overall_confidence,
+                    "line_item_notes": line_item_notes,
                     "langfuse_trace_id": trace_ids.get("trace_id"),
                     "langfuse_observation_id": trace_ids.get("observation_id"),
                 }
@@ -307,6 +316,90 @@ def _extract_json_object(raw_response: str) -> dict[str, Any]:
     return json.loads(text[start : end + 1])
 
 
+def _adjust_line_item_confidence(
+    parsed: ExtractedInvoiceDataWithConfidence,
+) -> tuple[ExtractedInvoiceDataWithConfidence, list[str]]:
+    """Lower line_items confidence when price breakdown fields are missing."""
+    notes: list[str] = []
+    items = parsed.line_items.value or []
+    for index, item in enumerate(items, start=1):
+        if any(
+            getattr(item, field) is None
+            for field in ("quantity", "unit_price", "total")
+        ):
+            notes.append(f"Line item {index} missing price breakdown")
+    if notes:
+        parsed.line_items.confidence = min(parsed.line_items.confidence, 0.4)
+    return parsed, notes
+
+
+def _validation_fallback_metrics(
+    raw_response: str,
+    validation_error: str,
+) -> dict[str, Any]:
+    try:
+        raw_payload = _extract_json_object(raw_response)
+    except (ValidationError, json.JSONDecodeError):
+        raw_payload = {"unparsed_response": raw_response}
+
+    return {
+        "is_fallback": True,
+        "fallback_extracted_data": {
+            "_raw_llm_response": raw_payload,
+            "_validation_error": validation_error,
+        },
+        "confidence_scores": {field: 0.3 for field in CONFIDENCE_WEIGHTS},
+        "overall_confidence": 0.3,
+        "review_reason": "Extraction validation failed - manual review needed",
+        "line_item_notes": [],
+        "raw_response": raw_response,
+    }
+
+
+def _serialize_line_items(line_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    serialized: list[dict[str, Any]] = []
+    for item in line_items:
+        serialized.append(
+            {
+                "description": item.get("description", ""),
+                "quantity": str(item["quantity"])
+                if item.get("quantity") is not None
+                else None,
+                "unit_price": str(item["unit_price"])
+                if item.get("unit_price") is not None
+                else None,
+                "total": str(item["total"]) if item.get("total") is not None else None,
+            }
+        )
+    return serialized
+
+
+async def _log_validation_fallback_audit(
+    *,
+    invoice_id: str,
+    tenant_id: str,
+    raw_response: str,
+    validation_error: str,
+    fallback_extracted_data: dict[str, Any],
+) -> None:
+    async with async_session_factory() as session:
+        await log_audit_event(
+            session,
+            tenant_id=uuid.UUID(tenant_id),
+            entity_type="invoice",
+            entity_id=uuid.UUID(invoice_id),
+            action="extraction_validation_fallback",
+            actor_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            actor_role="system",
+            reason=validation_error,
+            new_value={
+                "raw_llm_response": raw_response,
+                "fallback_extracted_data": fallback_extracted_data,
+            },
+        )
+        await session.commit()
+
+
 async def _persist_invoice_extraction(
     *,
     invoice_id: str,
@@ -315,6 +408,7 @@ async def _persist_invoice_extraction(
     confidence_scores: dict[str, float],
     overall_confidence: float,
     requires_human_review: bool,
+    review_reason: str = "",
 ) -> None:
     async with async_session_factory() as session:
         result = await session.execute(
@@ -329,21 +423,15 @@ async def _persist_invoice_extraction(
             return
 
         invoice.invoice_number = extracted_data.get("invoice_number", invoice.invoice_number)
-        invoice.amount = Decimal(str(extracted_data.get("total_amount", invoice.amount)))
+        total_amount = extracted_data.get("total_amount")
+        if total_amount is not None:
+            invoice.amount = Decimal(str(total_amount))
         invoice.currency = extracted_data.get("currency", invoice.currency)
         if extracted_data.get("due_date"):
             from datetime import date
 
             invoice.due_date = date.fromisoformat(extracted_data["due_date"])
-        invoice.line_items = [
-            {
-                "description": item["description"],
-                "quantity": str(item["quantity"]),
-                "unit_price": str(item["unit_price"]),
-                "total": str(item["total"]),
-            }
-            for item in extracted_data.get("line_items", [])
-        ]
+        invoice.line_items = _serialize_line_items(extracted_data.get("line_items", []))
         invoice.extracted_data = extracted_data
         invoice.extraction_confidence = overall_confidence
         invoice.status = (
@@ -355,6 +443,7 @@ async def _persist_invoice_extraction(
             **invoice.flags,
             "confidence_scores": confidence_scores,
             "requires_human_review": requires_human_review,
+            "review_reason": review_reason,
         }
         await session.commit()
 
@@ -398,7 +487,7 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
             vendor_id=(state.get("metadata") or {}).get("vendor_id"),
             raw_file_bytes=raw_file_bytes,
         )
-    except (DocumentPreparationError, ValidationError, json.JSONDecodeError) as exc:
+    except (DocumentPreparationError, json.JSONDecodeError) as exc:
         logger.exception("invoice_extraction_failed", invoice_id=invoice_id)
         async with async_session_factory() as session:
             await _agent.update_invoice_status(
@@ -415,15 +504,78 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
             "review_reason": f"Extraction failed: {exc}",
         }
 
+    if metrics.get("is_fallback"):
+        extracted_data = metrics["fallback_extracted_data"]
+        confidence_scores = metrics["confidence_scores"]
+        overall_confidence = metrics["overall_confidence"]
+        requires_review = True
+        review_reason = metrics["review_reason"]
+
+        await _log_validation_fallback_audit(
+            invoice_id=invoice_id,
+            tenant_id=tenant_id,
+            raw_response=raw_response,
+            validation_error=extracted_data.get("_validation_error", ""),
+            fallback_extracted_data=extracted_data,
+        )
+        await _persist_invoice_extraction(
+            invoice_id=invoice_id,
+            tenant_id=tenant_id,
+            extracted_data=extracted_data,
+            confidence_scores=confidence_scores,
+            overall_confidence=overall_confidence,
+            requires_human_review=requires_review,
+            review_reason=review_reason,
+        )
+
+        if kafka_producer_manager.is_started:
+            await kafka_producer_manager.send(
+                TOPIC_INVOICE_EXTRACTED,
+                {
+                    "invoice_id": invoice_id,
+                    "tenant_id": tenant_id,
+                    "extracted_data": extracted_data,
+                    "confidence_scores": confidence_scores,
+                    "overall_confidence": overall_confidence,
+                    "requires_human_review": requires_review,
+                    "review_reason": review_reason,
+                    "raw_response": raw_response,
+                    "validation_fallback": True,
+                },
+                key=invoice_id,
+            )
+
+        logger.warning(
+            "invoice_extraction_validation_fallback",
+            invoice_id=invoice_id,
+            overall_confidence=overall_confidence,
+        )
+
+        return {
+            **update,
+            "extracted_data": extracted_data,
+            "confidence_scores": confidence_scores,
+            "requires_human_review": requires_review,
+            "review_reason": review_reason,
+            "error": "",
+            "metadata": {
+                **(state.get("metadata") or {}),
+                "overall_confidence": overall_confidence,
+                "validation_fallback": True,
+            },
+        }
+
+    assert parsed is not None
     extracted = parsed.to_extracted_data()
     extracted_data = extracted.model_dump(mode="json")
     confidence_scores = metrics["confidence_scores"]
     overall_confidence = metrics["overall_confidence"]
     requires_review = overall_confidence < EXTRACTION_CONFIDENCE_THRESHOLD
-    review_reason = ""
+    review_reason_parts: list[str] = list(metrics.get("line_item_notes") or [])
     if requires_review:
         low_fields = low_confidence_fields(confidence_scores)
-        review_reason = f"Low extraction confidence: {', '.join(low_fields)}"
+        review_reason_parts.append(f"Low extraction confidence: {', '.join(low_fields)}")
+    review_reason = "; ".join(review_reason_parts)
 
     await _persist_invoice_extraction(
         invoice_id=invoice_id,
@@ -432,6 +584,7 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
         confidence_scores=confidence_scores,
         overall_confidence=overall_confidence,
         requires_human_review=requires_review,
+        review_reason=review_reason,
     )
 
     async with async_session_factory() as session:
@@ -501,7 +654,7 @@ async def extract_from_kafka_payload(payload: dict[str, Any]) -> tuple[dict[str,
         "metadata": payload,
     }
     result = await extract_invoice_node(state)
-    if result.get("error"):
+    if result.get("error") and not result.get("extracted_data"):
         raise ValueError(result["error"])
     overall = (result.get("metadata") or {}).get("overall_confidence", 0.0)
     return result.get("extracted_data") or {}, float(overall)

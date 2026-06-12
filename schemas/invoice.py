@@ -12,9 +12,9 @@ T = TypeVar("T")
 
 class LineItem(BaseModel):
     description: str
-    quantity: Decimal = Field(gt=0)
-    unit_price: Decimal = Field(ge=0)
-    total: Decimal = Field(ge=0)
+    quantity: Decimal | None = Field(default=None, gt=0)
+    unit_price: Decimal | None = Field(default=None, ge=0)
+    total: Decimal | None = Field(default=None, ge=0)
 
 
 class ExtractedInvoiceData(BaseModel):
@@ -118,6 +118,12 @@ class InvoiceResponse(BaseModel):
 class InvoiceUploadResponse(BaseModel):
     invoice_id: uuid.UUID
     status: InvoiceStatus
+
+
+class InvoiceRetryExtractionResponse(BaseModel):
+    invoice_id: uuid.UUID
+    status: InvoiceStatus
+    message: str
 
 
 class InvoiceListResponse(BaseModel):

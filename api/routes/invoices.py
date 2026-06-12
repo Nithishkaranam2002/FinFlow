@@ -18,6 +18,7 @@ from schemas.invoice import (
     InvoiceListResponse,
     InvoiceRejectRequest,
     InvoiceResponse,
+    InvoiceRetryExtractionResponse,
     InvoiceUploadResponse,
 )
 from services.audit import log_audit_event
@@ -61,6 +62,7 @@ async def upload_invoice(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
 
     file_bytes = await file.read()
+    file_b64 = base64.b64encode(file_bytes).decode("utf-8")
     invoice = Invoice(
         tenant_id=current_user.tenant_id,
         vendor_id=vendor_id,
@@ -69,7 +71,11 @@ async def upload_invoice(
         currency="USD",
         status=InvoiceStatus.RECEIVED,
         line_items=[],
-        flags={},
+        flags={
+            "upload_filename": file.filename,
+            "upload_content_type": file.content_type,
+            "file_base64": file_b64,
+        },
     )
     db.add(invoice)
     await db.flush()
@@ -82,7 +88,7 @@ async def upload_invoice(
             "vendor_id": str(vendor_id),
             "filename": file.filename,
             "content_type": file.content_type,
-            "file_base64": base64.b64encode(file_bytes).decode("utf-8"),
+            "file_base64": file_b64,
             "uploaded_by": str(current_user.id),
         },
         key=str(invoice.id),
@@ -162,6 +168,75 @@ async def get_invoice(
     if invoice is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
     return invoice
+
+
+@router.post(
+    "/{invoice_id}/retry-extraction",
+    response_model=InvoiceRetryExtractionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def retry_invoice_extraction(
+    invoice_id: uuid.UUID,
+    request: Request,
+    db: DbSession,
+    current_user: ApClerkUser,
+    producer: ProducerDep,
+) -> InvoiceRetryExtractionResponse:
+    result = await db.execute(
+        select(Invoice).where(
+            Invoice.id == invoice_id,
+            Invoice.tenant_id == current_user.tenant_id,
+        )
+    )
+    invoice = result.scalar_one_or_none()
+    if invoice is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+
+    flags = invoice.flags or {}
+    file_b64 = flags.get("file_base64")
+    content_type = flags.get("upload_content_type", "application/pdf")
+    if not file_b64:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Original upload file is not stored for this invoice. Re-upload the document.",
+        )
+
+    old_status = invoice.status
+    invoice.status = InvoiceStatus.RECEIVED
+    await producer.send(
+        TOPIC_INVOICE_RECEIVED,
+        {
+            "invoice_id": str(invoice.id),
+            "tenant_id": str(current_user.tenant_id),
+            "vendor_id": str(invoice.vendor_id),
+            "filename": flags.get("upload_filename", "invoice.pdf"),
+            "content_type": content_type,
+            "file_base64": file_b64,
+            "uploaded_by": str(current_user.id),
+            "retry": True,
+        },
+        key=str(invoice.id),
+    )
+
+    await log_audit_event(
+        db,
+        tenant_id=current_user.tenant_id,
+        entity_type="invoice",
+        entity_id=invoice.id,
+        action="extraction_retry_requested",
+        actor_id=current_user.id,
+        actor_role=current_user.role.value,
+        old_value={"status": old_status.value},
+        new_value={"status": InvoiceStatus.RECEIVED.value},
+        ip_address=request.client.host if request.client else None,
+    )
+    await db.commit()
+
+    return InvoiceRetryExtractionResponse(
+        invoice_id=invoice.id,
+        status=invoice.status,
+        message="Invoice re-queued for extraction",
+    )
 
 
 @router.patch("/{invoice_id}/approve", response_model=InvoiceResponse)
