@@ -17,6 +17,7 @@ import {
 } from '../../api/invoices'
 import { getApiErrorMessage } from '../../api/client'
 import { listVendors } from '../../api/vendors'
+import { notifyError, notifySuccess } from '../../lib/toast'
 import {
   canApproveInvoice,
   getExtractedFields,
@@ -74,13 +75,16 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
     mutationFn: () => approveInvoice(invoiceId, approvalNotes || undefined),
     onSuccess: () => {
       setActionError(null)
+      notifySuccess('Invoice approved successfully')
       void queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
       void queryClient.invalidateQueries({ queryKey: ['invoice-audit', invoiceId] })
       void queryClient.invalidateQueries({ queryKey: ['invoices'] })
       onUpdated?.()
     },
     onError: (error) => {
-      setActionError(`Approval failed: ${getApiErrorMessage(error)}`)
+      const message = `Approval failed: ${getApiErrorMessage(error)}`
+      setActionError(message)
+      notifyError(message)
     },
   })
 
@@ -88,13 +92,16 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
     mutationFn: () => rejectInvoice(invoiceId, rejectReason),
     onSuccess: () => {
       setActionError(null)
+      notifySuccess('Invoice rejected')
       void queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
       void queryClient.invalidateQueries({ queryKey: ['invoice-audit', invoiceId] })
       void queryClient.invalidateQueries({ queryKey: ['invoices'] })
       onUpdated?.()
     },
     onError: (error) => {
-      setActionError(`Rejection failed: ${getApiErrorMessage(error)}`)
+      const message = `Rejection failed: ${getApiErrorMessage(error)}`
+      setActionError(message)
+      notifyError(message)
     },
   })
 

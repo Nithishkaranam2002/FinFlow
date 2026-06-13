@@ -11,8 +11,10 @@ from api.middleware.logging import RequestLoggingMiddleware
 from api.middleware.request_id import RequestIDMiddleware
 from api.middleware.tenant_context import TenantContextMiddleware
 from api.routes import auth, dashboard, invoices, payments, reconciliation, vendors
+from core.checkpointer import close_checkpointer, init_checkpointer
 from core.config import get_settings
 from core.database import engine, get_db
+from core.health import gather_health
 from core.kafka import kafka_producer_manager
 
 API_VERSION = "1.0.0"
@@ -53,9 +55,20 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.warning("kafka_producer_unavailable", exc_info=True)
 
+    try:
+        await init_checkpointer()
+        from agents.graph import reset_invoice_graph as _reset_graph
+
+        _reset_graph()
+    except Exception:
+        logger.exception("checkpointer_init_failed")
+        if settings.is_production:
+            raise
+
     yield
 
     await kafka_producer_manager.stop()
+    await close_checkpointer()
     await engine.dispose()
     logger.info("application_shutdown")
 
@@ -68,15 +81,10 @@ app = FastAPI(
 
 settings = get_settings()
 
-CORS_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
 if settings.is_development:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=CORS_ORIGINS,
+        allow_origins=settings.allowed_cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -84,10 +92,10 @@ if settings.is_development:
 else:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=CORS_ORIGINS,
+        allow_origins=settings.allowed_cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
     )
 
 app.add_middleware(TenantContextMiddleware)
@@ -108,16 +116,10 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboar
 
 @app.get("/health")
 async def health_check(db: AsyncSession = Depends(get_db)) -> dict:
-    try:
-        await db.execute(text("SELECT 1"))
-        db_status = "healthy"
-    except Exception:
-        logger.exception("health_check_database_failed")
-        db_status = "unhealthy"
-
+    result = await gather_health(db)
     return {
-        "status": "healthy" if db_status == "healthy" else "degraded",
+        **result,
         "version": API_VERSION,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "database": db_status,
+        "environment": settings.app_env,
     }

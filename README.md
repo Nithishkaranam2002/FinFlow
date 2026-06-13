@@ -57,3 +57,65 @@ docker compose logs -f invoice-worker reconciliation-worker
 - **API:** FastAPI on port 8000
 - **Frontend:** Vite + React on port 5173 (proxies `/api` → `localhost:8000`)
 - **Data:** PostgreSQL, Redis, Kafka, Qdrant via `docker compose`
+
+## Production Deployment
+
+FinFlow includes production-oriented defaults for checkpoint persistence, health monitoring, resilient reconciliation, and a polished enterprise UI.
+
+### Required environment variables
+
+| Variable | Production value |
+|----------|------------------|
+| `APP_ENV` | `production` |
+| `SECRET_KEY` | Strong random secret (required; app refuses weak default) |
+| `DEBUG` | `false` (auto-set when `APP_ENV=production`) |
+| `OPENAI_API_KEY` | Valid key for extraction, embeddings, LLM reconciliation |
+| `CORS_ORIGINS` | Your frontend origin(s), comma-separated |
+| `USE_POSTGRES_CHECKPOINTER` | `true` (auto-enabled in production) |
+| `DATABASE_URL` / `DATABASE_SYNC_URL` | Managed PostgreSQL |
+| `RESEND_API_KEY` | Optional; approval email notifications |
+
+### Deploy backend
+
+```bash
+# Build and run without dev reload
+APP_ENV=production docker compose up -d --build api invoice-worker reconciliation-worker
+
+# Run migrations and seed (first deploy only)
+docker compose exec api uv run alembic upgrade head
+docker compose exec api uv run python scripts/seed_database.py --reset
+```
+
+### Deploy frontend
+
+```bash
+cd frontend
+npm ci
+npm run build
+# Serve dist/ behind nginx or a CDN; set VITE_API_BASE_URL to your API /api/v1 URL
+```
+
+### Health & smoke test
+
+```bash
+curl https://your-api.example.com/health
+chmod +x scripts/e2e_smoke.sh && API_BASE=https://your-api.example.com ./scripts/e2e_smoke.sh
+```
+
+### Production features
+
+- **PostgreSQL LangGraph checkpoints** — approval workflows survive API restarts
+- **Resilient reconciliation** — fuzzy/LLM failures still complete with partial matches
+- **Extended `/health`** — database, Redis, and Qdrant component checks
+- **Payment seeding** — approved/matched invoices get payment records for reconciliation
+- **Toast notifications & polished UI** — enterprise dashboard with Sonner alerts
+- **Audit trail** — all approval and reconciliation actions logged
+
+### Test credentials (after seed)
+
+| Email | Password | Role |
+|-------|----------|------|
+| `controller@acmecorp.com` | `Test1234!` | Controller |
+| `approver@acmecorp.com` | `Test1234!` | Approver |
+| `clerk@acmecorp.com` | `Test1234!` | AP Clerk |
+

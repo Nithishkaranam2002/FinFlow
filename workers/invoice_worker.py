@@ -123,6 +123,17 @@ async def process_invoice_received(message_value: dict) -> None:
 
 async def run_invoice_worker() -> None:
     settings = get_settings()
+    try:
+        from core.checkpointer import init_checkpointer
+        from agents.graph import reset_invoice_graph
+
+        await init_checkpointer()
+        reset_invoice_graph()
+    except Exception:
+        logger.exception("invoice_worker_checkpointer_init_failed")
+        if settings.is_production:
+            raise
+
     consumer = AIOKafkaConsumer(
         TOPIC_INVOICE_RECEIVED,
         bootstrap_servers=settings.kafka_brokers,

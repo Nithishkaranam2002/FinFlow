@@ -213,6 +213,8 @@ services:
       QDRANT_URL: http://qdrant:6333
       APP_ENV: development
       LOG_LEVEL: debug
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      USE_POSTGRES_CHECKPOINTER: "false"
     volumes:
       - .:/app
       - api_venv:/app/.venv
@@ -263,6 +265,8 @@ services:
       QDRANT_URL: http://qdrant:6333
       APP_ENV: development
       LOG_LEVEL: debug
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      USE_POSTGRES_CHECKPOINTER: "false"
     volumes:
       - .:/app
       - api_venv:/app/.venv

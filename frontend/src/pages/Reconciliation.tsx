@@ -10,6 +10,7 @@ import { BankStatementUpload } from '../components/reconciliation/BankStatementU
 import { ExceptionQueue } from '../components/reconciliation/ExceptionQueue'
 import { MatchRateChart } from '../components/reconciliation/MatchRateChart'
 import { ReconciliationReportPanel } from '../components/reconciliation/ReconciliationReport'
+import { notifyError, notifySuccess } from '../lib/toast'
 
 export function ReconciliationPage() {
   const queryClient = useQueryClient()
@@ -50,15 +51,19 @@ export function ReconciliationPage() {
     }) => uploadStatement(file, onProgress),
     onSuccess: (data) => {
       setStatementId(data.statement_id)
+      notifySuccess(`Statement uploaded (${data.line_count} lines)`)
       void queryClient.invalidateQueries({ queryKey: ['reconciliation-exceptions'] })
+    },
+    onError: (error) => {
+      notifyError('Statement upload failed', error)
     },
   })
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">Bank Reconciliation</h2>
-        <p className="text-sm text-muted">
+        <h2 className="ff-page-title">Bank Reconciliation</h2>
+        <p className="ff-page-subtitle">
           Upload statements, monitor match rates, and resolve unmatched exceptions.
         </p>
       </div>

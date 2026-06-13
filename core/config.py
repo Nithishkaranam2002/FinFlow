@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, HttpUrl
+from pydantic import Field, HttpUrl, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     app_port: int = 8000
     secret_key: str = Field(default="change-me-in-production")
     debug: bool = True
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    use_postgres_checkpointer: bool = False
 
     # Database
     database_url: str = (
@@ -86,6 +88,25 @@ class Settings(BaseSettings):
             for broker in self.kafka_bootstrap_servers.split(",")
             if broker.strip()
         ]
+
+    @property
+    def allowed_cors_origins(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
+
+    @model_validator(mode="after")
+    def apply_production_defaults(self) -> Settings:
+        if self.is_production:
+            if self.secret_key == "change-me-in-production":
+                raise ValueError(
+                    "SECRET_KEY must be set to a strong value when APP_ENV=production"
+                )
+            object.__setattr__(self, "debug", False)
+            object.__setattr__(self, "use_postgres_checkpointer", True)
+        return self
 
 
 @lru_cache

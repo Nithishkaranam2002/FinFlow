@@ -22,7 +22,23 @@ EXTRACTION_CONFIDENCE_THRESHOLD = 0.75
 FRAUD_RISK_THRESHOLD = 0.7
 
 _agent = BaseAgent()
-_checkpointer = MemorySaver()
+_invoice_graph = None
+
+
+def get_invoice_graph():
+    """Return the compiled invoice graph (lazy init with configured checkpointer)."""
+    global _invoice_graph
+    if _invoice_graph is None:
+        from core.checkpointer import get_checkpointer
+
+        _invoice_graph = build_invoice_graph(get_checkpointer())
+    return _invoice_graph
+
+
+def reset_invoice_graph() -> None:
+    """Force graph recompilation after checkpointer initialization."""
+    global _invoice_graph
+    _invoice_graph = None
 
 
 async def validate_node(state: FinFlowState) -> dict:
@@ -196,7 +212,14 @@ def build_invoice_graph(checkpointer: MemorySaver | None = None):
     )
     graph.add_edge("schedule_payment", END)
 
-    return graph.compile(checkpointer=checkpointer or _checkpointer)
+    return graph.compile(checkpointer=checkpointer or MemorySaver())
 
 
-invoice_graph = build_invoice_graph()
+class _InvoiceGraphProxy:
+    """Lazy proxy so importers can use `invoice_graph` after checkpointer init."""
+
+    def __getattr__(self, name: str):
+        return getattr(get_invoice_graph(), name)
+
+
+invoice_graph = _InvoiceGraphProxy()

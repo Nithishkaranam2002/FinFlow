@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import async_session_factory
 from core.security import get_password_hash
 from models.invoice import Invoice, InvoiceStatus
-from models.payment import Payment
+from models.payment import Payment, PaymentStatus
 from models.reconciliation import MatchType, ReconciliationMatch
 from models.tenant import Tenant
 from models.user import User, UserRole
@@ -156,6 +156,7 @@ async def seed_database(
         "vendors": 0,
         "test_users": 0,
         "invoices": 0,
+        "payments": 0,
         "reconciliation_matches": 0,
     }
     test_users: list[TestUserCredential] = []
@@ -247,6 +248,32 @@ async def seed_database(
                 )
             )
             counts["invoices"] += 1
+
+        await session.flush()
+
+        payment_eligible = {
+            InvoiceStatus.APPROVED,
+            InvoiceStatus.PAID,
+            InvoiceStatus.MATCHED,
+        }
+        sent_at = datetime.now(timezone.utc)
+        for row in payload["invoices"]:
+            status = InvoiceStatus(row.get("status", "received"))
+            if status not in payment_eligible:
+                continue
+            invoice_id = uuid.UUID(row["id"])
+            tenant_id = uuid.UUID(row["tenant_id"])
+            session.add(
+                Payment(
+                    tenant_id=tenant_id,
+                    invoice_id=invoice_id,
+                    amount=Decimal(row["amount"]),
+                    status=PaymentStatus.SENT,
+                    payment_reference=row["invoice_number"],
+                    sent_at=sent_at,
+                )
+            )
+            counts["payments"] += 1
 
         await session.flush()
 
