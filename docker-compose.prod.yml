@@ -1,0 +1,74 @@
+name: finflow-prod
+
+services:
+  api:
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      LOG_LEVEL: info
+      USE_POSTGRES_CHECKPOINTER: "true"
+      CORS_ORIGINS: http://localhost
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY for production}
+    volumes: []
+    command:
+      [
+        "uv",
+        "run",
+        "uvicorn",
+        "api.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--workers",
+        "4",
+      ]
+
+  invoice-worker:
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      LOG_LEVEL: info
+      USE_POSTGRES_CHECKPOINTER: "true"
+    volumes: []
+
+  reconciliation-worker:
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      LOG_LEVEL: info
+    volumes: []
+
+  celery-worker:
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      LOG_LEVEL: info
+    volumes: []
+
+  celery-beat:
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      LOG_LEVEL: info
+    volumes: []
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: finflow-frontend
+    restart: unless-stopped
+    networks:
+      - finflow-network
+    ports:
+      - "8088:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

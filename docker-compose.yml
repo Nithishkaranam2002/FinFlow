@@ -297,6 +297,34 @@ services:
     container_name: finflow-reconciliation-worker
     command: ["uv", "run", "python", "-m", "workers.reconciliation_worker"]
 
+  celery-worker:
+    <<: *worker-base
+    container_name: finflow-celery-worker
+    command:
+      [
+        "uv",
+        "run",
+        "celery",
+        "-A",
+        "core.celery_app:celery_app",
+        "worker",
+        "--loglevel=info",
+      ]
+
+  celery-beat:
+    <<: *worker-base
+    container_name: finflow-celery-beat
+    command:
+      [
+        "uv",
+        "run",
+        "celery",
+        "-A",
+        "core.celery_app:celery_app",
+        "beat",
+        "--loglevel=info",
+      ]
+
 networks:
   finflow-network:
     name: finflow-network

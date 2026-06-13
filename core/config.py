@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import lru_cache
 
 from pydantic import Field, HttpUrl, model_validator
@@ -20,6 +22,13 @@ class Settings(BaseSettings):
     debug: bool = True
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     use_postgres_checkpointer: bool = False
+    allow_registration: bool = True
+    rate_limit_enabled: bool = True
+    api_rate_limit_per_minute: int = 120
+    login_rate_limit_per_minute: int = 10
+    max_upload_size_bytes: int = 10 * 1024 * 1024
+    stale_invoice_minutes: int = 30
+    log_level: str = "info"
 
     # Database
     database_url: str = (
@@ -106,6 +115,7 @@ class Settings(BaseSettings):
                 )
             object.__setattr__(self, "debug", False)
             object.__setattr__(self, "use_postgres_checkpointer", True)
+            object.__setattr__(self, "allow_registration", False)
         return self
 
 

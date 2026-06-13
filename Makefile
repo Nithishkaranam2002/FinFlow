@@ -1,13 +1,17 @@
 COMPOSE := docker compose
+COMPOSE_PROD := $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
 API_SERVICE := api
 API_CONTAINER := finflow-api
-WORKER_SERVICES := invoice-worker reconciliation-worker
+WORKER_SERVICES := invoice-worker reconciliation-worker celery-worker celery-beat
 
-.PHONY: up down logs logs-workers seed migrate frontend test fresh wait-api
+.PHONY: up down prod logs logs-workers seed migrate frontend test fresh wait-api
 
 # Starts the full stack: infra, API, and Kafka workers (no compose profiles).
 up:
 	$(COMPOSE) up -d
+
+prod:
+	$(COMPOSE_PROD) up -d --build
 
 down:
 	$(COMPOSE) down
@@ -29,7 +33,7 @@ frontend:
 	cd frontend && npm install && npm run dev
 
 test:
-	$(COMPOSE) exec $(API_SERVICE) uv run pytest
+	uv run pytest tests/ -v
 
 wait-api:
 	@echo "Waiting for API health check..."

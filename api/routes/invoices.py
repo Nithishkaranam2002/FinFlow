@@ -7,6 +7,7 @@ from sqlalchemy import and_, func, select
 
 from api.deps import ApClerkUser, CurrentUser, DbSession
 from core.kafka import TOPIC_INVOICE_RECEIVED, ProducerDep
+from core.uploads import read_upload_with_limit
 from core.rbac import user_meets_required_role
 from models.audit import AuditLog
 from models.invoice import Invoice, InvoiceStatus
@@ -63,7 +64,7 @@ async def upload_invoice(
     if vendor_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
 
-    file_bytes = await file.read()
+    file_bytes = await read_upload_with_limit(file)
     file_b64 = base64.b64encode(file_bytes).decode("utf-8")
     invoice = Invoice(
         tenant_id=current_user.tenant_id,

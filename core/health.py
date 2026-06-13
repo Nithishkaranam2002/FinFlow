@@ -51,16 +51,32 @@ async def check_qdrant() -> str:
         return "degraded"
 
 
+async def check_kafka() -> str:
+    settings = get_settings()
+    try:
+        from aiokafka import AIOKafkaProducer
+
+        producer = AIOKafkaProducer(bootstrap_servers=settings.kafka_brokers)
+        await producer.start()
+        await producer.stop()
+        return "healthy"
+    except Exception:
+        logger.exception("health_check_kafka_failed")
+        return "degraded"
+
+
 async def gather_health(db: AsyncSession) -> dict[str, Any]:
-    db_status, redis_status, qdrant_status = await asyncio.gather(
+    db_status, redis_status, qdrant_status, kafka_status = await asyncio.gather(
         check_database(db),
         check_redis(),
         check_qdrant(),
+        check_kafka(),
     )
     components = {
         "database": db_status,
         "redis": redis_status,
         "qdrant": qdrant_status,
+        "kafka": kafka_status,
     }
     overall = "healthy"
     if db_status != "healthy":

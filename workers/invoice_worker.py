@@ -7,13 +7,15 @@ import asyncio
 import json
 import uuid
 
+from datetime import datetime, timedelta, timezone
+
 import structlog
-from aiokafka import AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from sqlalchemy import select
 
 from core.config import get_settings
 from core.database import async_session_factory
-from core.kafka import TOPIC_INVOICE_RECEIVED
+from core.kafka import TOPIC_INVOICE_RECEIVED, TOPIC_INVOICE_RECEIVED_DLQ
 from models.invoice import Invoice, InvoiceStatus
 from services.audit import log_audit_event
 from services.invoice_pipeline import build_state_from_kafka_payload, run_invoice_pipeline
@@ -22,12 +24,45 @@ logger = structlog.get_logger(__name__)
 
 CONSUMER_GROUP = "finflow-invoice-workers"
 SYSTEM_ACTOR_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+SKIP_STATUSES = {
+    InvoiceStatus.MATCHED,
+    InvoiceStatus.PENDING_APPROVAL,
+    InvoiceStatus.APPROVED,
+    InvoiceStatus.REJECTED,
+    InvoiceStatus.PAID,
+    InvoiceStatus.REVIEW_REQUIRED,
+}
+
+
+def _should_skip_invoice(invoice: Invoice, is_recovery: bool) -> bool:
+    if invoice.status in SKIP_STATUSES:
+        return True
+    if invoice.status == InvoiceStatus.EXTRACTING and not is_recovery:
+        updated_at = invoice.updated_at
+        if updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) - updated_at < timedelta(minutes=5):
+            return True
+    return False
+
+
+async def publish_invoice_dlq(payload: dict, error: str, producer: AIOKafkaProducer) -> None:
+    await producer.send_and_wait(
+        TOPIC_INVOICE_RECEIVED_DLQ,
+        value={
+            **payload,
+            "error": error,
+            "failed_at": datetime.now(timezone.utc).isoformat(),
+        },
+        key=payload.get("invoice_id"),
+    )
 
 
 async def process_invoice_received(message_value: dict) -> None:
     invoice_id = uuid.UUID(message_value["invoice_id"])
     tenant_id = uuid.UUID(message_value["tenant_id"])
     actor_id = uuid.UUID(message_value.get("uploaded_by", str(SYSTEM_ACTOR_ID)))
+    is_recovery = bool(message_value.get("recovery"))
 
     async with async_session_factory() as session:
         result = await session.execute(
@@ -39,6 +74,15 @@ async def process_invoice_received(message_value: dict) -> None:
         invoice = result.scalar_one_or_none()
         if invoice is None:
             logger.warning("invoice_not_found", invoice_id=str(invoice_id))
+            return
+
+        if _should_skip_invoice(invoice, is_recovery):
+            logger.info(
+                "invoice_processing_skipped",
+                invoice_id=str(invoice_id),
+                status=invoice.status.value,
+                recovery=is_recovery,
+            )
             return
 
         old_status = invoice.status.value
@@ -140,9 +184,15 @@ async def run_invoice_worker() -> None:
         group_id=CONSUMER_GROUP,
         value_deserializer=lambda value: json.loads(value.decode("utf-8")),
         auto_offset_reset="earliest",
-        enable_auto_commit=True,
+        enable_auto_commit=False,
+    )
+    dlq_producer = AIOKafkaProducer(
+        bootstrap_servers=settings.kafka_brokers,
+        value_serializer=lambda value: json.dumps(value).encode("utf-8"),
+        key_serializer=lambda key: key.encode("utf-8") if key is not None else None,
     )
     await consumer.start()
+    await dlq_producer.start()
     logger.info(
         "invoice_worker_started",
         topic=TOPIC_INVOICE_RECEIVED,
@@ -153,13 +203,20 @@ async def run_invoice_worker() -> None:
         async for message in consumer:
             try:
                 await process_invoice_received(message.value)
-            except Exception:
+                await consumer.commit()
+            except Exception as exc:
                 logger.exception(
                     "invoice_message_processing_failed",
                     offset=message.offset,
                     partition=message.partition,
                 )
+                try:
+                    await publish_invoice_dlq(message.value, str(exc), dlq_producer)
+                except Exception:
+                    logger.exception("invoice_dlq_publish_failed", offset=message.offset)
+                await consumer.commit()
     finally:
+        await dlq_producer.stop()
         await consumer.stop()
         logger.info("invoice_worker_stopped")
 

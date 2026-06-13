@@ -30,6 +30,10 @@ celery_app.conf.beat_schedule = {
         "task": "workers.extraction_quality_tasks.run_extraction_quality_scores",
         "schedule": crontab(minute=15),
     },
+    "stale-invoice-recovery": {
+        "task": "workers.stale_invoice_tasks.recover_stale_invoices",
+        "schedule": crontab(minute="*/15"),
+    },
 }
 
 celery_app.autodiscover_tasks(["workers"])

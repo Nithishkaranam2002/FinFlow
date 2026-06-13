@@ -75,41 +75,61 @@ FinFlow includes production-oriented defaults for checkpoint persistence, health
 | `DATABASE_URL` / `DATABASE_SYNC_URL` | Managed PostgreSQL |
 | `RESEND_API_KEY` | Optional; approval email notifications |
 
-### Deploy backend
+### Deploy full stack (production)
 
 ```bash
-# Build and run without dev reload
-APP_ENV=production docker compose up -d --build api invoice-worker reconciliation-worker
+export SECRET_KEY="$(openssl rand -hex 32)"
+make prod
 
-# Run migrations and seed (first deploy only)
-docker compose exec api uv run alembic upgrade head
-docker compose exec api uv run python scripts/seed_database.py --reset
+# First deploy only
+make migrate
+make seed
+```
+
+This starts API (4 workers), Kafka workers, Celery worker + beat, and nginx frontend on port **8088**.
+
+### Deploy backend only
+
+```bash
+export SECRET_KEY="$(openssl rand -hex 32)"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build \
+  api invoice-worker reconciliation-worker celery-worker celery-beat
 ```
 
 ### Deploy frontend
 
 ```bash
-cd frontend
-npm ci
-npm run build
-# Serve dist/ behind nginx or a CDN; set VITE_API_BASE_URL to your API /api/v1 URL
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build frontend
+# UI: http://localhost:8088  (proxies /api to backend)
+```
+
+Or build manually:
+
+```bash
+cd frontend && npm ci && npm run build
+# Serve dist/ behind nginx; see nginx/nginx.conf
 ```
 
 ### Health & smoke test
 
 ```bash
-curl https://your-api.example.com/health
-chmod +x scripts/e2e_smoke.sh && API_BASE=https://your-api.example.com ./scripts/e2e_smoke.sh
+curl http://localhost:8000/health
+curl http://localhost:8000/live
+curl http://localhost:8000/ready
+chmod +x scripts/e2e_smoke.sh && ./scripts/e2e_smoke.sh
 ```
 
 ### Production features
 
 - **PostgreSQL LangGraph checkpoints** — approval workflows survive API restarts
 - **Resilient reconciliation** — fuzzy/LLM failures still complete with partial matches
-- **Extended `/health`** — database, Redis, and Qdrant component checks
+- **Extended `/health`, `/live`, `/ready`** — database, Redis, Qdrant, and Kafka checks
+- **Security hardening** — rate limiting, security headers, upload size caps, docs disabled in prod
+- **Stale invoice recovery** — Celery re-queues invoices stuck in `received`/`extracting`
+- **Kafka DLQ** — failed invoice messages routed to `invoice.received.dlq`
 - **Payment seeding** — approved/matched invoices get payment records for reconciliation
-- **Toast notifications & polished UI** — enterprise dashboard with Sonner alerts
-- **Audit trail** — all approval and reconciliation actions logged
+- **Frontend nginx container** — SPA + API reverse proxy with caching headers
+- **CI pipeline** — unit tests, frontend build, Docker image builds on every PR
 
 ### Test credentials (after seed)
 

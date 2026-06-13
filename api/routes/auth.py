@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 
 from api.deps import CurrentUser, DbSession
+from core.config import get_settings
 from core.security import create_access_token, get_password_hash, verify_password
 from models.tenant import Tenant
 from models.user import User
@@ -15,6 +16,12 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserRegister, db: DbSession) -> User:
+    if not get_settings().allow_registration:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is disabled in this environment",
+        )
+
     tenant_result = await db.execute(
         select(Tenant).where(
             Tenant.id == payload.tenant_id,

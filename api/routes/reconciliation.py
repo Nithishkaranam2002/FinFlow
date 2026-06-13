@@ -6,6 +6,7 @@ from sqlalchemy import and_, func, select
 
 from api.deps import ApClerkUser, ControllerUser, DbSession
 from core.kafka import TOPIC_RECONCILIATION_STARTED, ProducerDep
+from core.uploads import read_upload_with_limit
 from models.invoice import Invoice
 from models.payment import Payment
 from models.reconciliation import (
@@ -53,7 +54,7 @@ async def upload_bank_statement(
             detail="Only CSV or MT940 statement files are supported",
         )
 
-    content = await file.read()
+    content = await read_upload_with_limit(file)
     try:
         source_format, parsed_lines = parse_statement_file(
             content,

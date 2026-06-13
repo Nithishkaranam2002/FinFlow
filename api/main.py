@@ -1,14 +1,19 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+import logging
 
 import structlog
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.exceptions import register_exception_handlers
 from api.middleware.logging import RequestLoggingMiddleware
+from api.middleware.rate_limit import RateLimitMiddleware
 from api.middleware.request_id import RequestIDMiddleware
+from api.middleware.security_headers import SecurityHeadersMiddleware
 from api.middleware.tenant_context import TenantContextMiddleware
 from api.routes import auth, dashboard, invoices, payments, reconciliation, vendors
 from core.checkpointer import close_checkpointer, init_checkpointer
@@ -22,6 +27,8 @@ logger = structlog.get_logger(__name__)
 
 
 def configure_logging() -> None:
+    settings = get_settings()
+    level = getattr(logging, settings.log_level.upper(), logging.INFO)
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
@@ -29,7 +36,7 @@ def configure_logging() -> None:
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(0),
+        wrapper_class=structlog.make_filtering_bound_logger(level),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
@@ -73,13 +80,18 @@ async def lifespan(app: FastAPI):
     logger.info("application_shutdown")
 
 
+settings = get_settings()
+
 app = FastAPI(
     title="FinFlow API",
     version=API_VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if settings.is_development else None,
+    redoc_url="/redoc" if settings.is_development else None,
+    openapi_url="/openapi.json" if settings.is_development else None,
 )
 
-settings = get_settings()
+register_exception_handlers(app)
 
 if settings.is_development:
     app.add_middleware(
@@ -100,6 +112,8 @@ else:
 
 app.add_middleware(TenantContextMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestIDMiddleware)
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
@@ -112,6 +126,24 @@ app.include_router(
 )
 app.include_router(vendors.router, prefix="/api/v1/vendors", tags=["vendors"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
+
+
+@app.get("/live")
+async def liveness_probe() -> dict:
+    return {"status": "alive", "version": API_VERSION}
+
+
+@app.get("/ready")
+async def readiness_probe(db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    result = await gather_health(db)
+    payload = {
+        **result,
+        "version": API_VERSION,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "environment": settings.app_env,
+    }
+    code = status.HTTP_200_OK if result["status"] == "healthy" else status.HTTP_503_SERVICE_UNAVAILABLE
+    return JSONResponse(status_code=code, content=payload)
 
 
 @app.get("/health")
