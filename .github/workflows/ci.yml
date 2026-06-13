@@ -85,5 +85,5 @@ jobs:
         run: npm run build
 
       - name: Build frontend Docker image
-        working-directory: ..
+        working-directory: ${{ github.workspace }}
         run: docker build -f frontend/Dockerfile -t finflow-frontend:ci .
