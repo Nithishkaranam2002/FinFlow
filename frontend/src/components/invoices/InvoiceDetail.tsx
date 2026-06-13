@@ -20,6 +20,7 @@ import {
   canApproveInvoice,
   getExtractedFields,
   getRiskScore,
+  showsApprovalSection,
 } from '../../lib/invoiceUtils'
 import type { FraudFlag, Invoice } from '../../types'
 import { formatCurrency, StatusBadge } from '../../lib/utils'
@@ -49,7 +50,11 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
     queryFn: () => getInvoice(invoiceId),
     refetchInterval: (query) => {
       const status = query.state.data?.status
-      return status === 'extracting' || status === 'received' ? 2000 : false
+      return status === 'extracting' ||
+        status === 'received' ||
+        status === 'matched'
+        ? 2000
+        : false
     },
   })
 
@@ -248,7 +253,7 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
         </div>
       </section>
 
-      {['pending_approval', 'review_required'].includes(invoice.status) ? (
+      {showsApprovalSection(invoice) ? (
         <section className="rounded-xl border border-purple-200 bg-purple-50/40 p-5">
           <h4 className="text-sm font-semibold text-slate-900">Approval</h4>
           {canApprove ? (

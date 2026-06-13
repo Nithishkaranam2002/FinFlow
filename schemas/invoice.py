@@ -126,6 +126,13 @@ class InvoiceRetryExtractionResponse(BaseModel):
     message: str
 
 
+class InvoiceRouteApprovalResponse(BaseModel):
+    invoice_id: uuid.UUID
+    status: InvoiceStatus
+    required_role: str | None = None
+    message: str
+
+
 class InvoiceListResponse(BaseModel):
     items: list[InvoiceResponse]
     total: int

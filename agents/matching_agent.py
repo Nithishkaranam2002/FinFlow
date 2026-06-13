@@ -20,7 +20,7 @@ from models.invoice import Invoice, InvoiceStatus
 from models.vendor import Vendor
 from services.audit import log_audit_event
 from services.fraud_detection import run_fraud_checks
-from services.matching import match_vendor_by_name
+from services.matching import VendorMatchResult, match_vendor_by_name
 
 logger = structlog.get_logger(__name__)
 
@@ -40,6 +40,7 @@ async def match_vendor_node(state: FinFlowState) -> dict:
     tenant_id = uuid.UUID(state["tenant_id"])
     extracted = state.get("extracted_data") or {}
     extracted_vendor_name = extracted.get("vendor_name", "")
+    vendor_id_hint = (state.get("metadata") or {}).get("vendor_id")
 
     async with async_session_factory() as session:
         result = await session.execute(
@@ -49,7 +50,33 @@ async def match_vendor_node(state: FinFlowState) -> dict:
             )
         )
         vendors = list(result.scalars().all())
-        match_result = match_vendor_by_name(extracted_vendor_name, vendors)
+
+        if vendor_id_hint:
+            selected_vendor = next(
+                (vendor for vendor in vendors if str(vendor.id) == str(vendor_id_hint)),
+                None,
+            )
+            if selected_vendor:
+                match_result = VendorMatchResult(
+                    vendor_match={
+                        "vendor_id": str(selected_vendor.id),
+                        "matched_name": selected_vendor.name,
+                        "extracted_name": extracted_vendor_name or selected_vendor.name,
+                        "match_confidence": 100.0,
+                        "match_method": "upload_vendor_id",
+                        "email": selected_vendor.email,
+                        "payment_terms_days": selected_vendor.payment_terms_days,
+                    },
+                    match_confidence=100.0,
+                    requires_human_review=False,
+                    review_reason="",
+                    fraud_flags=[],
+                    matched_vendor=selected_vendor,
+                )
+            else:
+                match_result = match_vendor_by_name(extracted_vendor_name, vendors)
+        else:
+            match_result = match_vendor_by_name(extracted_vendor_name, vendors)
 
         if match_result.matched_vendor and match_result.match_confidence and match_result.match_confidence >= 65:
             await _update_invoice_vendor(
@@ -61,17 +88,25 @@ async def match_vendor_node(state: FinFlowState) -> dict:
 
         await session.commit()
 
-    existing_flags = list(state.get("fraud_flags") or [])
-    combined_flags = existing_flags + match_result.fraud_flags
+    if vendor_id_hint and match_result.matched_vendor and (
+        (match_result.vendor_match or {}).get("match_method") == "upload_vendor_id"
+    ):
+        combined_flags = list(match_result.fraud_flags)
+        requires_review = match_result.requires_human_review
+        review_reason = match_result.review_reason or ""
+    else:
+        existing_flags = list(state.get("fraud_flags") or [])
+        combined_flags = existing_flags + match_result.fraud_flags
+        requires_review = state.get("requires_human_review", False) or match_result.requires_human_review
+        review_reason = match_result.review_reason or state.get("review_reason", "")
 
     return {
         **update,
         "vendor_match": match_result.vendor_match,
         "po_match": None,
         "fraud_flags": combined_flags,
-        "requires_human_review": state.get("requires_human_review", False)
-        or match_result.requires_human_review,
-        "review_reason": match_result.review_reason or state.get("review_reason", ""),
+        "requires_human_review": requires_review,
+        "review_reason": review_reason,
         "metadata": {
             **(state.get("metadata") or {}),
             "vendor_match_confidence": match_result.match_confidence,
@@ -222,5 +257,5 @@ async def _persist_fraud_results(
         "overall_risk_score": overall_risk_score,
     }
     if overall_risk_score > 0.7:
-        invoice.status = InvoiceStatus.REVIEW_REQUIRED
+        invoice.status = InvoiceStatus.MATCHED
     await session.flush()

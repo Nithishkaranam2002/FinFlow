@@ -13,10 +13,10 @@ from sqlalchemy import select
 
 from core.config import get_settings
 from core.database import async_session_factory
-from core.kafka import TOPIC_INVOICE_RECEIVED, KafkaProducerManager
+from core.kafka import TOPIC_INVOICE_RECEIVED
 from models.invoice import Invoice, InvoiceStatus
 from services.audit import log_audit_event
-from services.extraction import ExtractionError, extract_invoice
+from services.invoice_pipeline import build_state_from_kafka_payload, run_invoice_pipeline
 
 logger = structlog.get_logger(__name__)
 
@@ -48,7 +48,7 @@ async def process_invoice_received(message_value: dict) -> None:
             tenant_id=tenant_id,
             entity_type="invoice",
             entity_id=invoice_id,
-            action="extraction_started",
+            action="pipeline_started",
             actor_id=actor_id,
             actor_role="system",
             old_value={"status": old_status},
@@ -56,47 +56,40 @@ async def process_invoice_received(message_value: dict) -> None:
         )
         await session.commit()
 
-        try:
-            extracted_data, confidence = await extract_invoice(message_value)
-        except ExtractionError as exc:
-            invoice.status = InvoiceStatus.REVIEW_REQUIRED
-            invoice.flags = {**invoice.flags, "extraction_error": str(exc)}
+    try:
+        state = build_state_from_kafka_payload(message_value)
+        result = await run_invoice_pipeline(state)
+    except Exception:
+        async with async_session_factory() as session:
+            result = await session.execute(
+                select(Invoice).where(
+                    Invoice.id == invoice_id,
+                    Invoice.tenant_id == tenant_id,
+                )
+            )
+            invoice = result.scalar_one_or_none()
+            if invoice and invoice.status == InvoiceStatus.EXTRACTING:
+                invoice.status = InvoiceStatus.REVIEW_REQUIRED
+                invoice.flags = {
+                    **(invoice.flags or {}),
+                    "pipeline_error": "unexpected_error",
+                }
             await log_audit_event(
                 session,
                 tenant_id=tenant_id,
                 entity_type="invoice",
                 entity_id=invoice_id,
-                action="extraction_failed",
+                action="pipeline_failed",
                 actor_id=SYSTEM_ACTOR_ID,
                 actor_role="system",
-                reason=str(exc),
+                reason="Unexpected pipeline error",
                 new_value={"status": InvoiceStatus.REVIEW_REQUIRED.value},
             )
-            logger.warning(
-                "invoice_extraction_failed",
-                invoice_id=str(invoice_id),
-                error=str(exc),
-            )
             await session.commit()
-            return
-        except Exception:
-            invoice.status = InvoiceStatus.REVIEW_REQUIRED
-            invoice.flags = {**invoice.flags, "extraction_error": "unexpected_error"}
-            await log_audit_event(
-                session,
-                tenant_id=tenant_id,
-                entity_type="invoice",
-                entity_id=invoice_id,
-                action="extraction_failed",
-                actor_id=SYSTEM_ACTOR_ID,
-                actor_role="system",
-                reason="Unexpected extraction error",
-                new_value={"status": InvoiceStatus.REVIEW_REQUIRED.value},
-            )
-            logger.exception("invoice_extraction_unexpected_error", invoice_id=str(invoice_id))
-            await session.commit()
-            return
+        logger.exception("invoice_pipeline_failed", invoice_id=str(invoice_id))
+        return
 
+    async with async_session_factory() as session:
         refreshed = await session.execute(
             select(Invoice).where(
                 Invoice.id == invoice_id,
@@ -109,22 +102,23 @@ async def process_invoice_received(message_value: dict) -> None:
             tenant_id=tenant_id,
             entity_type="invoice",
             entity_id=invoice_id,
-            action="extraction_completed",
+            action="pipeline_completed",
             actor_id=SYSTEM_ACTOR_ID,
             actor_role="system",
             new_value={
                 "status": invoice.status.value,
-                "confidence": confidence,
-                "extracted_data": extracted_data,
+                "approval_status": result.get("approval_status"),
+                "steps": result.get("step_history"),
             },
         )
         await session.commit()
-        logger.info(
-            "invoice_extraction_completed",
-            invoice_id=str(invoice_id),
-            status=invoice.status.value,
-            confidence=confidence,
-        )
+
+    logger.info(
+        "invoice_pipeline_finished",
+        invoice_id=str(invoice_id),
+        status=invoice.status.value,
+        approval_status=result.get("approval_status"),
+    )
 
 
 async def run_invoice_worker() -> None:

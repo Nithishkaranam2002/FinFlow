@@ -132,8 +132,6 @@ async def run_fraud_checks(
 
     if risk_score > 0.7:
         result.requires_human_review = True
-    if risk_score > 0.9:
-        result.approval_status = "auto_rejected"
 
     return result
 

@@ -104,6 +104,15 @@ async def schedule_payment_node(state: FinFlowState) -> dict:
     }
 
 
+def route_at_start(state: FinFlowState) -> Literal["extract", "validate"]:
+    metadata = state.get("metadata") or {}
+    if metadata.get("skip_extraction"):
+        return "validate"
+    if state.get("extracted_data") and not state.get("raw_file_bytes"):
+        return "validate"
+    return "extract"
+
+
 def route_after_extract(
     state: FinFlowState,
 ) -> Literal["validate", "human_review"]:
@@ -120,12 +129,7 @@ def route_after_extract(
 def route_after_fraud(
     state: FinFlowState,
 ) -> Literal["route_approval", "human_review"]:
-    if state.get("approval_status") == "auto_rejected":
-        return "human_review"
-    if state.get("requires_human_review"):
-        return "human_review"
-    if state.get("overall_risk_score", 0.0) > FRAUD_RISK_THRESHOLD:
-        return "human_review"
+    """Always route matched invoices to approval policy; human review is for extraction issues."""
     return "route_approval"
 
 
@@ -158,7 +162,11 @@ def build_invoice_graph(checkpointer: MemorySaver | None = None):
     graph.add_node("await_approval", await_approval_node)
     graph.add_node("schedule_payment", schedule_payment_node)
 
-    graph.add_edge(START, "extract")
+    graph.add_conditional_edges(
+        START,
+        route_at_start,
+        {"extract": "extract", "validate": "validate"},
+    )
     graph.add_conditional_edges(
         "extract",
         route_after_extract,

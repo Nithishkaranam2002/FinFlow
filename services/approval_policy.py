@@ -34,6 +34,13 @@ def resolve_required_role(
     clerk_limit = Decimal(str(thresholds.get("ap_clerk", AP_CLERK_LIMIT)))
     controller_limit = Decimal(str(thresholds.get("controller", CONTROLLER_LIMIT)))
 
+    if config.get("approval_threshold") is not None:
+        clerk_limit = Decimal(str(config["approval_threshold"]))
+
+    policy_rules = config.get("policy_rules") or {}
+    if policy_rules.get("require_dual_approval_above") is not None:
+        controller_limit = Decimal(str(policy_rules["require_dual_approval_above"]))
+
     if fraud_flags and any(flag.get("severity") in HIGH_SEVERITIES for flag in fraud_flags):
         return UserRole.CONTROLLER.value, False
 

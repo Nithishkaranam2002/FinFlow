@@ -90,24 +90,36 @@ async def send_approval_email(recipient: str, payload: dict[str, Any]) -> str | 
     </p>
     """
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {settings.resend_api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "from": settings.email_from,
-                "to": [recipient],
-                "subject": f"Approval needed: Invoice {payload.get('invoice_number')}",
-                "html": html,
-            },
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": settings.email_from,
+                    "to": [recipient],
+                    "subject": f"Approval needed: Invoice {payload.get('invoice_number')}",
+                    "html": html,
+                },
+            )
+            response.raise_for_status()
+            notification_id = response.json().get("id")
+            logger.info(
+                "approval_email_sent",
+                recipient=recipient,
+                notification_id=notification_id,
+            )
+            return notification_id
+    except httpx.HTTPError as exc:
+        logger.warning(
+            "approval_email_failed",
+            recipient=recipient,
+            error=str(exc),
         )
-        response.raise_for_status()
-        notification_id = response.json().get("id")
-        logger.info("approval_email_sent", recipient=recipient, notification_id=notification_id)
-        return notification_id
+        return None
 
 
 async def send_slack_approval_card(payload: dict[str, Any]) -> str | None:
@@ -160,10 +172,14 @@ async def send_slack_approval_card(payload: dict[str, Any]) -> str | None:
         },
     ]
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(
-            settings.slack_webhook_url,
-            json={"blocks": blocks, "text": "Invoice approval required"},
-        )
-        response.raise_for_status()
-        return str(uuid.uuid4())
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                settings.slack_webhook_url,
+                json={"blocks": blocks, "text": "Invoice approval required"},
+            )
+            response.raise_for_status()
+            return str(uuid.uuid4())
+    except httpx.HTTPError as exc:
+        logger.warning("slack_approval_card_failed", error=str(exc))
+        return None

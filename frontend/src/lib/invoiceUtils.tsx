@@ -31,9 +31,20 @@ export function getConfidenceScores(invoice: Invoice): Record<string, number> {
 
 export function canApproveInvoice(user: User | null, invoice: Invoice): boolean {
   if (!user) return false
-  if (!['pending_approval', 'review_required'].includes(invoice.status)) return false
+  const approvableStatuses: InvoiceStatus[] = [
+    'pending_approval',
+    'review_required',
+    'matched',
+  ]
+  if (!approvableStatuses.includes(invoice.status)) return false
   const required = ((invoice.flags?.required_role as UserRole) ?? 'approver') as UserRole
+  if (invoice.status === 'matched' && !invoice.flags?.required_role) return false
   return ROLE_LEVEL[user.role] >= ROLE_LEVEL[required]
+}
+
+export function showsApprovalSection(invoice: Invoice): boolean {
+  if (['pending_approval', 'review_required'].includes(invoice.status)) return true
+  return invoice.status === 'matched' && Boolean(invoice.flags?.required_role)
 }
 
 export interface ExtractedField {

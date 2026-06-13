@@ -19,8 +19,10 @@ from schemas.invoice import (
     InvoiceRejectRequest,
     InvoiceResponse,
     InvoiceRetryExtractionResponse,
+    InvoiceRouteApprovalResponse,
     InvoiceUploadResponse,
 )
+from services.invoice_pipeline import build_state_from_invoice, run_invoice_pipeline
 from services.audit import log_audit_event
 from services.extraction_quality import log_human_correction_score
 from services.graph_resume import resume_invoice_approval
@@ -236,6 +238,88 @@ async def retry_invoice_extraction(
         invoice_id=invoice.id,
         status=invoice.status,
         message="Invoice re-queued for extraction",
+    )
+
+
+@router.post(
+    "/{invoice_id}/route-approval",
+    response_model=InvoiceRouteApprovalResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def route_invoice_approval(
+    invoice_id: uuid.UUID,
+    request: Request,
+    db: DbSession,
+    current_user: ApClerkUser,
+) -> InvoiceRouteApprovalResponse:
+    result = await db.execute(
+        select(Invoice).where(
+            Invoice.id == invoice_id,
+            Invoice.tenant_id == current_user.tenant_id,
+        )
+    )
+    invoice = result.scalar_one_or_none()
+    if invoice is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+
+    if not invoice.extracted_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invoice has no extracted data. Run extraction first.",
+        )
+
+    if invoice.status not in {
+        InvoiceStatus.MATCHED,
+        InvoiceStatus.REVIEW_REQUIRED,
+        InvoiceStatus.RECEIVED,
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot route approval from status '{invoice.status.value}'",
+        )
+
+    old_status = invoice.status
+    state = build_state_from_invoice(invoice)
+    try:
+        await run_invoice_pipeline(state)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Approval routing failed: {exc}",
+        ) from exc
+
+    await db.expire_all()
+    refreshed = await db.execute(
+        select(Invoice).where(
+            Invoice.id == invoice_id,
+            Invoice.tenant_id == current_user.tenant_id,
+        )
+    )
+    invoice = refreshed.scalar_one()
+    required_role = (invoice.flags or {}).get("required_role")
+
+    await log_audit_event(
+        db,
+        tenant_id=current_user.tenant_id,
+        entity_type="invoice",
+        entity_id=invoice.id,
+        action="approval_routing_requested",
+        actor_id=current_user.id,
+        actor_role=current_user.role.value,
+        old_value={"status": old_status.value},
+        new_value={
+            "status": invoice.status.value,
+            "required_role": required_role,
+        },
+        ip_address=request.client.host if request.client else None,
+    )
+    await db.commit()
+
+    return InvoiceRouteApprovalResponse(
+        invoice_id=invoice.id,
+        status=invoice.status,
+        required_role=required_role,
+        message="Invoice routed through approval policy",
     )
 
 
