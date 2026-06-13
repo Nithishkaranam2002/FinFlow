@@ -15,6 +15,7 @@ import {
   getInvoiceAuditTrail,
   rejectInvoice,
 } from '../../api/invoices'
+import { getApiErrorMessage } from '../../api/client'
 import { listVendors } from '../../api/vendors'
 import {
   canApproveInvoice,
@@ -42,6 +43,7 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
   const user = useAuthStore((s) => s.user)
   const [approvalNotes, setApprovalNotes] = useState('')
   const [rejectReason, setRejectReason] = useState('')
+  const [actionError, setActionError] = useState<string | null>(null)
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
@@ -71,18 +73,28 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
   const approveMutation = useMutation({
     mutationFn: () => approveInvoice(invoiceId, approvalNotes || undefined),
     onSuccess: () => {
+      setActionError(null)
       void queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
+      void queryClient.invalidateQueries({ queryKey: ['invoice-audit', invoiceId] })
       void queryClient.invalidateQueries({ queryKey: ['invoices'] })
       onUpdated?.()
+    },
+    onError: (error) => {
+      setActionError(`Approval failed: ${getApiErrorMessage(error)}`)
     },
   })
 
   const rejectMutation = useMutation({
     mutationFn: () => rejectInvoice(invoiceId, rejectReason),
     onSuccess: () => {
+      setActionError(null)
       void queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
+      void queryClient.invalidateQueries({ queryKey: ['invoice-audit', invoiceId] })
       void queryClient.invalidateQueries({ queryKey: ['invoices'] })
       onUpdated?.()
+    },
+    onError: (error) => {
+      setActionError(`Rejection failed: ${getApiErrorMessage(error)}`)
     },
   })
 
@@ -258,6 +270,11 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
           <h4 className="text-sm font-semibold text-slate-900">Approval</h4>
           {canApprove ? (
             <div className="mt-4 space-y-4">
+              {actionError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger">
+                  {actionError}
+                </div>
+              ) : null}
               <textarea
                 value={approvalNotes}
                 onChange={(e) => setApprovalNotes(e.target.value)}
@@ -268,16 +285,21 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  disabled={approveMutation.isPending}
-                  onClick={() => void approveMutation.mutateAsync()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                  disabled={approveMutation.isPending || rejectMutation.isPending}
+                  onClick={() => approveMutation.mutate()}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {approveMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Approving...
+                    </>
                   ) : (
-                    <CheckCircle2 className="h-4 w-4" />
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Approve
+                    </>
                   )}
-                  Approve
                 </button>
                 <div className="flex flex-1 flex-wrap items-end gap-2">
                   <input
@@ -288,16 +310,25 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
                   />
                   <button
                     type="button"
-                    disabled={rejectMutation.isPending || !rejectReason.trim()}
-                    onClick={() => void rejectMutation.mutateAsync()}
-                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-danger hover:bg-red-100 disabled:opacity-60"
+                    disabled={
+                      rejectMutation.isPending ||
+                      approveMutation.isPending ||
+                      !rejectReason.trim()
+                    }
+                    onClick={() => rejectMutation.mutate()}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-danger hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {rejectMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Rejecting...
+                      </>
                     ) : (
-                      <XCircle className="h-4 w-4" />
+                      <>
+                        <XCircle className="h-4 w-4" />
+                        Reject
+                      </>
                     )}
-                    Reject
                   </button>
                 </div>
               </div>

@@ -288,7 +288,7 @@ async def route_invoice_approval(
             detail=f"Approval routing failed: {exc}",
         ) from exc
 
-    await db.expire_all()
+    db.expire_all()
     refreshed = await db.execute(
         select(Invoice).where(
             Invoice.id == invoice_id,
@@ -364,6 +364,8 @@ async def approve_invoice(
             approver_id=str(current_user.id),
             notes=notes or "",
             approver_role=current_user.role.value,
+            invoice_id=str(invoice_id),
+            tenant_id=str(current_user.tenant_id),
         )
     except Exception as exc:
         raise HTTPException(
@@ -371,6 +373,7 @@ async def approve_invoice(
             detail=f"Unable to resume approval workflow: {exc}",
         ) from exc
 
+    db.expire_all()
     result = await db.execute(
         select(Invoice).where(
             Invoice.id == invoice_id,
@@ -420,6 +423,8 @@ async def reject_invoice(
             approver_id=str(current_user.id),
             notes=payload.reason,
             approver_role=current_user.role.value,
+            invoice_id=str(invoice_id),
+            tenant_id=str(current_user.tenant_id),
         )
     except Exception as exc:
         raise HTTPException(
@@ -427,6 +432,7 @@ async def reject_invoice(
             detail=f"Unable to resume approval workflow: {exc}",
         ) from exc
 
+    db.expire_all()
     result = await db.execute(
         select(Invoice).where(
             Invoice.id == invoice_id,

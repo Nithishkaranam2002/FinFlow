@@ -221,51 +221,27 @@ async def await_approval_node(state: FinFlowState) -> dict:
     if decision_value not in {"approved", "rejected"}:
         approval_status = "pending"
 
-    invoice_status = (
-        InvoiceStatus.APPROVED
-        if approval_status == "approved"
-        else InvoiceStatus.REJECTED
-    )
+    invoice_id = state.get("invoice_id") or (state.get("metadata") or {}).get("thread_id")
+    tenant_id = state.get("tenant_id")
+    if not invoice_id or not tenant_id:
+        raise ValueError("Missing invoice_id or tenant_id in workflow state")
 
-    async with async_session_factory() as db:
-        set_current_tenant_id(uuid.UUID(state["tenant_id"]))
-        result = await db.execute(
-            select(Invoice).where(Invoice.id == uuid.UUID(state["invoice_id"]))
-        )
-        invoice = result.scalar_one_or_none()
-        old_status = invoice.status.value if invoice else None
+    if approval_status in {"approved", "rejected"}:
+        from services.invoice_approval import record_approval_decision
 
-        if invoice:
-            invoice.status = invoice_status
-            invoice.flags = {
-                **(invoice.flags or {}),
-                "approver_id": approver_id,
-                "approval_notes": notes,
-                "approval_decision_at": datetime.now(timezone.utc).isoformat(),
-            }
-
-        await log_audit_event(
-            db,
-            tenant_id=uuid.UUID(state["tenant_id"]),
-            entity_type="invoice",
-            entity_id=uuid.UUID(state["invoice_id"]),
-            action=f"approval_{decision_value}",
-            actor_id=uuid.UUID(approver_id),
-            actor_role=decision.get("approver_role")
+        await record_approval_decision(
+            invoice_id=str(invoice_id),
+            tenant_id=str(tenant_id),
+            decision=decision_value,
+            approver_id=approver_id,
+            notes=notes,
+            approver_role=decision.get("approver_role")
             or (state.get("metadata") or {}).get("required_role", "approver"),
-            old_value={"status": old_status},
-            new_value={
-                "status": invoice_status.value,
-                "approval_status": approval_status,
-                "approver_id": approver_id,
-            },
-            reason=notes or None,
         )
-        await db.commit()
 
     logger.info(
         "approval_decision_recorded",
-        invoice_id=state["invoice_id"],
+        invoice_id=invoice_id,
         decision=decision_value,
         approver_id=approver_id,
     )
