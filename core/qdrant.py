@@ -19,7 +19,11 @@ EMBEDDING_DIMENSION = 1536
 @lru_cache
 def get_qdrant_client() -> QdrantClient:
     settings = get_settings()
-    client = QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None)
+    client = QdrantClient(
+        url=settings.qdrant_url,
+        api_key=settings.qdrant_api_key or None,
+        check_compatibility=False,
+    )
     logger.info("qdrant_client_initialized", url=settings.qdrant_url)
     return client
 

@@ -101,14 +101,26 @@ async def search_similar_payments(
     client = get_qdrant_client()
     vector = await embed_text(description)
 
-    results = client.search(
-        collection_name=RECONCILIATION_COLLECTION,
-        query_vector=vector,
-        limit=limit,
-        query_filter=Filter(
-            must=[FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))]
-        ),
+    query_filter = Filter(
+        must=[FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))]
     )
+    if hasattr(client, "search"):
+        results = client.search(
+            collection_name=RECONCILIATION_COLLECTION,
+            query_vector=vector,
+            limit=limit,
+            query_filter=query_filter,
+        )
+        hits = results
+    else:
+        response = client.query_points(
+            collection_name=RECONCILIATION_COLLECTION,
+            query=vector,
+            limit=limit,
+            query_filter=query_filter,
+            with_payload=True,
+        )
+        hits = response.points
 
     return [
         {
@@ -120,7 +132,7 @@ async def search_similar_payments(
             "payment_reference": hit.payload.get("payment_reference"),
             "vector_score": float(hit.score),
         }
-        for hit in results
+        for hit in hits
         if hit.payload
     ]
 

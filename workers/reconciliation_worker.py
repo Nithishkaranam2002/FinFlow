@@ -53,7 +53,15 @@ async def process_reconciliation_started(
             bank_statement_id=bank_statement_id,
             tenant_id=tenant_id,
         )
-        raise
+        from agents.reconciliation_agent import generate_report_node
+        from agents.reconciliation_state import create_reconciliation_state
+
+        result = await generate_report_node(
+            create_reconciliation_state(
+                statement_id=str(bank_statement_id),
+                tenant_id=str(tenant_id),
+            )
+        )
 
     report = result.get("report") or {}
     completion = {

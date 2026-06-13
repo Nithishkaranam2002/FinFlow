@@ -50,7 +50,7 @@ dependencies = [
     "tenacity>=9.0.0",
     "httpx>=0.28.1",
     "resend>=2.6.0",
-    "qdrant-client>=1.12.1",
+    "qdrant-client>=1.13.0,<1.14.0",
 ]
 
 [dependency-groups]

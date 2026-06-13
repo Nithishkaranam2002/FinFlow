@@ -173,6 +173,26 @@ async def fuzzy_match_node(state: ReconciliationState) -> dict:
         {"invoice_id": state["statement_id"], "tenant_id": state["tenant_id"]},
         "fuzzy_match",
     )
+    try:
+        return await _run_fuzzy_match(state, update)
+    except Exception as exc:
+        logger.exception(
+            "fuzzy_match_failed",
+            statement_id=state["statement_id"],
+            tenant_id=state["tenant_id"],
+        )
+        return {
+            **update,
+            "fuzzy_matched_count": 0,
+            "fuzzy_candidates": [],
+            "error": f"fuzzy_match_failed: {exc}",
+        }
+
+
+async def _run_fuzzy_match(
+    state: ReconciliationState,
+    update: dict[str, Any],
+) -> dict[str, Any]:
     statement_id = uuid.UUID(state["statement_id"])
     tenant_id = uuid.UUID(state["tenant_id"])
     matched_count = 0
@@ -204,6 +224,11 @@ async def fuzzy_match_node(state: ReconciliationState) -> dict:
                     / 100.0
                 )
                 combined = (vector_score * 0.6) + (fuzz_score * 0.4)
+                hit_amount = hit.get("amount")
+                if hit_amount is not None and _amounts_equal(
+                    line.amount, Decimal(str(hit_amount))
+                ):
+                    combined = min(1.0, combined + 0.5)
                 candidate = {**hit, "combined_score": combined, "line_id": str(line.id)}
 
                 if combined >= FUZZY_CANDIDATE_THRESHOLD:
@@ -248,6 +273,11 @@ async def fuzzy_match_node(state: ReconciliationState) -> dict:
 
         await db.commit()
 
+    logger.info(
+        "fuzzy_match_complete",
+        statement_id=state["statement_id"],
+        matched=matched_count,
+    )
     return {
         **update,
         "fuzzy_matched_count": matched_count,
@@ -278,6 +308,59 @@ async def llm_judgment_node(state: ReconciliationState) -> dict:
         {"invoice_id": state["statement_id"], "tenant_id": state["tenant_id"]},
         "llm_judgment",
     )
+    try:
+        return await _run_llm_judgment(state, update)
+    except Exception as exc:
+        logger.exception(
+            "llm_judgment_failed",
+            statement_id=state["statement_id"],
+            tenant_id=state["tenant_id"],
+        )
+        return await _mark_unmatched_lines_without_llm(state, update, reason=str(exc))
+
+
+async def _mark_unmatched_lines_without_llm(
+    state: ReconciliationState,
+    update: dict[str, Any],
+    *,
+    reason: str,
+) -> dict[str, Any]:
+    """Mark remaining lines unmatched when LLM pass cannot run."""
+    statement_id = uuid.UUID(state["statement_id"])
+    tenant_id = uuid.UUID(state["tenant_id"])
+    unmatched_lines: list[dict[str, Any]] = []
+
+    async with async_session_factory() as db:
+        set_current_tenant_id(tenant_id)
+        lines = await _get_unmatched_lines(db, statement_id=statement_id, tenant_id=tenant_id)
+        for line in lines:
+            explanation = reason or "LLM reconciliation pass unavailable."
+            line.exception_reason = explanation
+            line.llm_explanation = explanation
+            unmatched_lines.append(
+                {
+                    "line_id": str(line.id),
+                    "amount": float(line.amount),
+                    "transaction_date": line.transaction_date.isoformat(),
+                    "description": line.description,
+                    "explanation": explanation,
+                }
+            )
+        await db.commit()
+
+    return {
+        **update,
+        "llm_matched_count": 0,
+        "unmatched_lines": unmatched_lines,
+        "unmatched_count": len(unmatched_lines),
+        "error": reason,
+    }
+
+
+async def _run_llm_judgment(
+    state: ReconciliationState,
+    update: dict[str, Any],
+) -> dict[str, Any]:
     statement_id = uuid.UUID(state["statement_id"])
     tenant_id = uuid.UUID(state["tenant_id"])
     matched_count = 0
@@ -524,7 +607,19 @@ async def run_reconciliation_pipeline(*, statement_id: str, tenant_id: str) -> d
         statement_id=statement_id,
         tenant_id=tenant_id,
     )
-    result = await reconciliation_graph.ainvoke(initial_state)
+    try:
+        result = await reconciliation_graph.ainvoke(initial_state)
+    except Exception as exc:
+        logger.exception(
+            "reconciliation_pipeline_interrupted",
+            statement_id=statement_id,
+            tenant_id=tenant_id,
+        )
+        merged_state: ReconciliationState = {
+            **initial_state,
+            "error": str(exc),
+        }
+        result = await generate_report_node(merged_state)
     logger.info(
         "reconciliation_pipeline_complete",
         statement_id=statement_id,

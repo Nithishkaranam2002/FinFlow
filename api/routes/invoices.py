@@ -288,12 +288,11 @@ async def route_invoice_approval(
             detail=f"Approval routing failed: {exc}",
         ) from exc
 
-    db.expire_all()
     refreshed = await db.execute(
         select(Invoice).where(
             Invoice.id == invoice_id,
             Invoice.tenant_id == current_user.tenant_id,
-        )
+        ).execution_options(populate_existing=True)
     )
     invoice = refreshed.scalar_one()
     required_role = (invoice.flags or {}).get("required_role")
@@ -373,14 +372,13 @@ async def approve_invoice(
             detail=f"Unable to resume approval workflow: {exc}",
         ) from exc
 
-    db.expire_all()
-    result = await db.execute(
+    refreshed = await db.execute(
         select(Invoice).where(
             Invoice.id == invoice_id,
             Invoice.tenant_id == current_user.tenant_id,
-        )
+        ).execution_options(populate_existing=True)
     )
-    return result.scalar_one()
+    return refreshed.scalar_one()
 
 
 @router.patch("/{invoice_id}/reject", response_model=InvoiceResponse)
@@ -432,14 +430,13 @@ async def reject_invoice(
             detail=f"Unable to resume approval workflow: {exc}",
         ) from exc
 
-    db.expire_all()
-    result = await db.execute(
+    refreshed = await db.execute(
         select(Invoice).where(
             Invoice.id == invoice_id,
             Invoice.tenant_id == current_user.tenant_id,
-        )
+        ).execution_options(populate_existing=True)
     )
-    return result.scalar_one()
+    return refreshed.scalar_one()
 
 
 @router.patch("/{invoice_id}/correct-extraction", response_model=InvoiceResponse)
