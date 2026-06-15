@@ -9,6 +9,10 @@ export function SessionBootstrap({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true
+    const timeout = window.setTimeout(() => {
+      if (active) setReady(true)
+    }, 8_000)
+
     fetchMe()
       .then((user) => {
         if (active) setUser(user)
@@ -17,10 +21,15 @@ export function SessionBootstrap({ children }: { children: ReactNode }) {
         if (active) clearUser()
       })
       .finally(() => {
-        if (active) setReady(true)
+        if (active) {
+          window.clearTimeout(timeout)
+          setReady(true)
+        }
       })
+
     return () => {
       active = false
+      window.clearTimeout(timeout)
     }
   }, [setUser, clearUser])
 
