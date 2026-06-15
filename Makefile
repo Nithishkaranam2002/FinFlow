@@ -5,11 +5,18 @@ API_SERVICE := api
 API_CONTAINER := finflow-api
 WORKER_SERVICES := invoice-worker reconciliation-worker celery-worker celery-beat
 
-.PHONY: up down prod tls logs logs-workers seed migrate frontend test fresh wait-api e2e
+.PHONY: up down prod tls logs logs-workers seed migrate frontend test fresh wait-api e2e fix
 
-# Starts the full stack: infra, API, and Kafka workers (no compose profiles).
+# Starts the full stack including frontend on http://localhost:8088
 up:
-	$(COMPOSE) up -d
+	$(COMPOSE) up -d --build
+	$(MAKE) wait-api
+
+fix:
+	$(COMPOSE) exec $(API_SERVICE) uv sync
+	$(COMPOSE) up -d minio frontend celery-worker celery-beat
+	$(COMPOSE) restart api invoice-worker reconciliation-worker
+	$(MAKE) wait-api
 
 prod:
 	$(COMPOSE_PROD) up -d --build
