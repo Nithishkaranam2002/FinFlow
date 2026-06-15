@@ -91,6 +91,12 @@ async def lifespan(app: FastAPI):
     yield
 
     await kafka_producer_manager.stop()
+    try:
+        from temporal.client import close_temporal_client
+
+        await close_temporal_client()
+    except Exception:
+        logger.warning("temporal_client_close_failed", exc_info=True)
     await close_checkpointer()
     await engine.dispose()
     logger.info("application_shutdown")

@@ -256,7 +256,7 @@ async def await_approval_node(state: FinFlowState) -> dict:
 
 async def escalation_check_node() -> dict[str, Any]:
     """
-    Hourly Celery task: escalate stale pending approvals.
+    Hourly maintenance: escalate stale pending approvals.
 
     After 48 hours without response, notify the controller.
     After 3 escalations, reassign to the auditor role.

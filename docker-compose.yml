@@ -1,5 +1,57 @@
 name: finflow
 
+x-worker-base: &worker-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  networks:
+    - finflow-network
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    DATABASE_URL: postgresql+asyncpg://finflow:finflow123@postgres:5432/finflow_db
+    DATABASE_SYNC_URL: postgresql://finflow:finflow123@postgres:5432/finflow_db
+    REDIS_URL: redis://redis:6379/0
+    KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    QDRANT_URL: http://qdrant:6333
+    S3_ENDPOINT_URL: http://minio:9000
+    S3_ACCESS_KEY: finflow
+    S3_SECRET_KEY: finflow123
+    S3_BUCKET: finflow-documents
+    TEMPORAL_ADDRESS: temporal:7233
+    TEMPORAL_ENABLED: "true"
+    APP_ENV: development
+    LOG_LEVEL: debug
+    CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    USE_POSTGRES_CHECKPOINTER: "false"
+  volumes:
+    - .:/app
+    - api_venv:/app/.venv
+  working_dir: /app
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    zookeeper:
+      condition: service_healthy
+    kafka:
+      condition: service_healthy
+    qdrant:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+  deploy:
+    resources:
+      limits:
+        cpus: "1.0"
+        memory: 1G
+      reservations:
+        cpus: "0.25"
+        memory: 512M
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -214,6 +266,46 @@ services:
       retries: 5
       start_period: 20s
 
+  temporal:
+    image: temporalio/auto-setup:1.25.2
+    container_name: finflow-temporal
+    restart: unless-stopped
+    networks:
+      - finflow-network
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: finflow
+      POSTGRES_PWD: finflow123
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/7233'"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 90s
+
+  temporal-ui:
+    image: temporalio/ui:2.31.2
+    container_name: finflow-temporal-ui
+    restart: unless-stopped
+    networks:
+      - finflow-network
+    ports:
+      - "8233:8080"
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:8233
+
   api:
     build:
       context: .
@@ -237,6 +329,8 @@ services:
       S3_ACCESS_KEY: finflow
       S3_SECRET_KEY: finflow123
       S3_BUCKET: finflow-documents
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_ENABLED: "true"
       APP_ENV: development
       LOG_LEVEL: debug
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
@@ -259,6 +353,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      temporal:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s
@@ -274,90 +370,32 @@ services:
           cpus: "0.25"
           memory: 512M
 
-  invoice-worker: &worker-base
-    build:
-      context: .
-      dockerfile: Dockerfile
+  invoice-worker:
+    <<: *worker-base
     container_name: finflow-invoice-worker
-    restart: unless-stopped
-    networks:
-      - finflow-network
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      DATABASE_URL: postgresql+asyncpg://finflow:finflow123@postgres:5432/finflow_db
-      DATABASE_SYNC_URL: postgresql://finflow:finflow123@postgres:5432/finflow_db
-      REDIS_URL: redis://redis:6379/0
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      QDRANT_URL: http://qdrant:6333
-      S3_ENDPOINT_URL: http://minio:9000
-      S3_ACCESS_KEY: finflow
-      S3_SECRET_KEY: finflow123
-      S3_BUCKET: finflow-documents
-      APP_ENV: development
-      LOG_LEVEL: debug
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
-      USE_POSTGRES_CHECKPOINTER: "false"
-    volumes:
-      - .:/app
-      - api_venv:/app/.venv
-    working_dir: /app
+    profiles: ["legacy-kafka"]
     command: ["uv", "run", "python", "-m", "workers.invoice_worker"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      zookeeper:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      qdrant:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 1G
-        reservations:
-          cpus: "0.25"
-          memory: 512M
 
   reconciliation-worker:
     <<: *worker-base
     container_name: finflow-reconciliation-worker
     command: ["uv", "run", "python", "-m", "workers.reconciliation_worker"]
 
-  celery-worker:
+  temporal-worker:
     <<: *worker-base
-    container_name: finflow-celery-worker
-    command:
-      [
-        "uv",
-        "run",
-        "celery",
-        "-A",
-        "core.celery_app:celery_app",
-        "worker",
-        "--loglevel=info",
-      ]
-
-  celery-beat:
-    <<: *worker-base
-    container_name: finflow-celery-beat
-    command:
-      [
-        "uv",
-        "run",
-        "celery",
-        "-A",
-        "core.celery_app:celery_app",
-        "beat",
-        "--loglevel=info",
-      ]
+    container_name: finflow-temporal-worker
+    command: ["python", "-m", "workers.temporal_worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
 
   frontend:
     build:

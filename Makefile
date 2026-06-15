@@ -3,7 +3,7 @@ COMPOSE_PROD := $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
 COMPOSE_TLS := $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tls.yml
 API_SERVICE := api
 API_CONTAINER := finflow-api
-WORKER_SERVICES := invoice-worker reconciliation-worker celery-worker celery-beat
+WORKER_SERVICES := temporal-worker reconciliation-worker
 
 .PHONY: up down prod tls logs logs-workers seed migrate frontend test fresh wait-api e2e fix
 
@@ -14,8 +14,8 @@ up:
 
 fix:
 	$(COMPOSE) exec $(API_SERVICE) uv sync
-	$(COMPOSE) up -d minio frontend celery-worker celery-beat
-	$(COMPOSE) restart api invoice-worker reconciliation-worker
+	$(COMPOSE) up -d minio temporal temporal-ui temporal-worker frontend
+	$(COMPOSE) restart api
 	$(MAKE) wait-api
 
 prod:

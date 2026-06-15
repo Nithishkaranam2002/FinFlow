@@ -86,14 +86,16 @@ make migrate
 make seed
 ```
 
-This starts API (4 workers), Kafka workers, Celery worker + beat, and nginx frontend on port **8088**.
+This starts API (4 workers), Temporal worker + schedules, reconciliation worker, and nginx frontend on port **8088**.
+
+**Temporal UI:** http://localhost:8233
 
 ### Deploy backend only
 
 ```bash
 export SECRET_KEY="$(openssl rand -hex 32)"
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build \
-  api invoice-worker reconciliation-worker celery-worker celery-beat
+  api temporal-worker reconciliation-worker
 ```
 
 ### Deploy frontend
@@ -125,8 +127,8 @@ chmod +x scripts/e2e_smoke.sh && ./scripts/e2e_smoke.sh
 - **Resilient reconciliation** — fuzzy/LLM failures still complete with partial matches
 - **Extended `/health`, `/live`, `/ready`** — database, Redis, Qdrant, and Kafka checks
 - **Security hardening** — rate limiting, security headers, upload size caps, docs disabled in prod
-- **Stale invoice recovery** — Celery re-queues invoices stuck in `received`/`extracting`
-- **Kafka DLQ** — failed invoice messages routed to `invoice.received.dlq`
+- **Temporal orchestration** — durable invoice lifecycle workflows with approval signals
+- **Scheduled maintenance** — approval escalation, stale invoice recovery, extraction quality (Temporal schedules)
 - **Payment seeding** — approved/matched invoices get payment records for reconciliation
 - **Frontend nginx container** — SPA + API reverse proxy with caching headers
 - **CI pipeline** — unit tests, frontend build, Docker image builds on every PR

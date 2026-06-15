@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     # Kafka
     kafka_bootstrap_servers: str = "localhost:9092"
 
+    # Temporal
+    temporal_address: str = "localhost:7233"
+    temporal_enabled: bool = True
+
     # AI providers
     openai_api_key: str = ""
     anthropic_api_key: str = ""

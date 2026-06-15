@@ -5,7 +5,6 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Upload
 from sqlalchemy import and_, func, select
 
 from api.deps import ApClerkUser, CurrentUser, DbSession
-from core.kafka import TOPIC_INVOICE_RECEIVED, ProducerDep
 from core.uploads import read_upload_with_limit
 from core.rbac import user_meets_required_role
 from models.audit import AuditLog
@@ -25,7 +24,6 @@ from schemas.invoice import (
 from services.invoice_pipeline import build_state_from_invoice, run_invoice_pipeline
 from services.audit import log_audit_event
 from services.extraction_quality import log_human_correction_score
-from services.graph_resume import resume_invoice_approval
 from services.invoice_documents import (
     build_invoice_kafka_payload,
     invoice_flags_for_upload,
@@ -33,6 +31,7 @@ from services.invoice_documents import (
     store_invoice_file,
 )
 from services.mem0_corrections import store_vendor_correction_pattern
+from services.temporal_dispatch import dispatch_invoice_processing, submit_approval_decision
 
 router = APIRouter(tags=["invoices"])
 
@@ -50,7 +49,6 @@ async def upload_invoice(
     request: Request,
     db: DbSession,
     current_user: ApClerkUser,
-    producer: ProducerDep,
     file: UploadFile = File(...),
     vendor_id: uuid.UUID = Form(...),
 ) -> InvoiceUploadResponse:
@@ -96,19 +94,23 @@ async def upload_invoice(
         storage_key=storage_key,
     )
 
-    await producer.send(
-        TOPIC_INVOICE_RECEIVED,
-        build_invoice_kafka_payload(
-            invoice_id=invoice.id,
-            tenant_id=current_user.tenant_id,
-            vendor_id=vendor_id,
-            filename=file.filename,
-            content_type=file.content_type or "application/pdf",
-            storage_key=storage_key,
-            uploaded_by=current_user.id,
-        ),
-        key=str(invoice.id),
+    kafka_payload = build_invoice_kafka_payload(
+        invoice_id=invoice.id,
+        tenant_id=current_user.tenant_id,
+        vendor_id=vendor_id,
+        filename=file.filename,
+        content_type=file.content_type or "application/pdf",
+        storage_key=storage_key,
+        uploaded_by=current_user.id,
     )
+
+    try:
+        await dispatch_invoice_processing(kafka_payload)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Unable to start invoice workflow: {exc}",
+        ) from exc
 
     await log_audit_event(
         db,
@@ -196,7 +198,6 @@ async def retry_invoice_extraction(
     request: Request,
     db: DbSession,
     current_user: ApClerkUser,
-    producer: ProducerDep,
 ) -> InvoiceRetryExtractionResponse:
     result = await db.execute(
         select(Invoice).where(
@@ -231,7 +232,13 @@ async def retry_invoice_extraction(
     )
     if not storage_key:
         kafka_payload["file_base64"] = flags.get("file_base64")
-    await producer.send(TOPIC_INVOICE_RECEIVED, kafka_payload, key=str(invoice.id))
+    try:
+        await dispatch_invoice_processing(kafka_payload)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Unable to restart invoice workflow: {exc}",
+        ) from exc
 
     await log_audit_event(
         db,
@@ -366,18 +373,16 @@ async def approve_invoice(
             detail=f"Requires {required_role} role or higher",
         )
 
-    thread_id = (invoice.flags or {}).get("thread_id", str(invoice_id))
     notes = payload.notes if payload else None
 
     try:
-        await resume_invoice_approval(
-            thread_id=thread_id,
+        await submit_approval_decision(
+            db=db,
+            invoice=invoice,
             decision="approved",
             approver_id=str(current_user.id),
             notes=notes or "",
             approver_role=current_user.role.value,
-            invoice_id=str(invoice_id),
-            tenant_id=str(current_user.tenant_id),
         )
     except Exception as exc:
         raise HTTPException(
@@ -425,17 +430,14 @@ async def reject_invoice(
             detail=f"Requires {required_role} role or higher",
         )
 
-    thread_id = (invoice.flags or {}).get("thread_id", str(invoice_id))
-
     try:
-        await resume_invoice_approval(
-            thread_id=thread_id,
+        await submit_approval_decision(
+            db=db,
+            invoice=invoice,
             decision="rejected",
             approver_id=str(current_user.id),
             notes=payload.reason,
             approver_role=current_user.role.value,
-            invoice_id=str(invoice_id),
-            tenant_id=str(current_user.tenant_id),
         )
     except Exception as exc:
         raise HTTPException(

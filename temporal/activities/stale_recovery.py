@@ -1,27 +1,25 @@
-"""Recover invoices stuck in received/extracting states."""
+"""Stale invoice recovery — starts Temporal workflows instead of Kafka."""
 
 from __future__ import annotations
 
-import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 
 import structlog
 from sqlalchemy import select
 
-from core.celery_app import celery_app
 from core.config import get_settings
 from core.database import async_session_factory
-from core.kafka import TOPIC_INVOICE_RECEIVED, kafka_producer_manager
 from models.invoice import Invoice, InvoiceStatus
 from services.audit import log_audit_event
 from services.invoice_documents import build_invoice_kafka_payload, load_invoice_bytes
+from temporal.client import start_invoice_workflow
 
 logger = structlog.get_logger(__name__)
 SYSTEM_ACTOR_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
-async def _recover_stale_invoices() -> dict:
+async def recover_stale_invoices_impl() -> dict:
     settings = get_settings()
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=settings.stale_invoice_minutes)
     recovered = 0
@@ -38,9 +36,6 @@ async def _recover_stale_invoices() -> dict:
 
     if not stale_invoices:
         return {"recovered": 0, "failed": 0, "scanned": 0}
-
-    if not kafka_producer_manager.is_started:
-        await kafka_producer_manager.start()
 
     for invoice in stale_invoices:
         flags = invoice.flags or {}
@@ -85,11 +80,9 @@ async def _recover_stale_invoices() -> dict:
             )
             if not storage_key:
                 payload["file_base64"] = file_b64
-            await kafka_producer_manager.send(
-                TOPIC_INVOICE_RECEIVED,
-                payload,
-                key=str(invoice.id),
-            )
+
+            await start_invoice_workflow(payload)
+
             async with async_session_factory() as session:
                 db_invoice = await session.get(Invoice, invoice.id)
                 if db_invoice is None:
@@ -123,8 +116,3 @@ async def _recover_stale_invoices() -> dict:
         failed=failed,
     )
     return {"recovered": recovered, "failed": failed, "scanned": len(stale_invoices)}
-
-
-@celery_app.task(name="workers.stale_invoice_tasks.recover_stale_invoices")
-def recover_stale_invoices() -> dict:
-    return asyncio.run(_recover_stale_invoices())

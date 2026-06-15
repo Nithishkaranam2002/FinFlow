@@ -38,18 +38,12 @@ services:
       LOG_LEVEL: info
     volumes: []
 
-  celery-worker:
+  temporal-worker:
     environment:
       APP_ENV: production
       DEBUG: "false"
       LOG_LEVEL: info
-    volumes: []
-
-  celery-beat:
-    environment:
-      APP_ENV: production
-      DEBUG: "false"
-      LOG_LEVEL: info
+      USE_POSTGRES_CHECKPOINTER: "true"
     volumes: []
 
   frontend:
