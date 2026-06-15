@@ -1,10 +1,12 @@
 import axios from 'axios'
+import { logout as apiLogout } from './auth'
 import { useAuthStore } from '../store/authStore'
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
 export const apiClient = axios.create({
   baseURL,
+  withCredentials: true,
   headers: {
     Accept: 'application/json',
   },
@@ -30,19 +32,11 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
   return fallback
 }
 
-apiClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout()
+      useAuthStore.getState().clearUser()
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
@@ -50,3 +44,11 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+export async function logout() {
+  try {
+    await apiLogout()
+  } finally {
+    useAuthStore.getState().clearUser()
+  }
+}

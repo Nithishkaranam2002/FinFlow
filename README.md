@@ -130,6 +130,11 @@ chmod +x scripts/e2e_smoke.sh && ./scripts/e2e_smoke.sh
 - **Payment seeding** — approved/matched invoices get payment records for reconciliation
 - **Frontend nginx container** — SPA + API reverse proxy with caching headers
 - **CI pipeline** — unit tests, frontend build, Docker image builds on every PR
+- **S3/MinIO document storage** — invoice PDFs stored in object storage, not Postgres
+- **httpOnly cookie auth** — JWT no longer stored in browser localStorage
+- **Sentry + Prometheus** — optional error tracking and `/metrics` endpoint
+- **Playwright E2E** — login and navigation smoke tests in CI
+- **TLS-ready nginx** — `make tls` with self-signed certs for HTTPS demos
 
 ### Test credentials (after seed)
 

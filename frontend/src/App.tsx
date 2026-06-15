@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { SessionBootstrap } from './components/SessionBootstrap'
 import { DashboardPage } from './pages/Dashboard'
 import { InvoiceDetailPage } from './pages/InvoiceDetail'
 import { InvoicesPage } from './pages/Invoices'
@@ -10,8 +11,8 @@ import { SettingsPage } from './pages/Settings'
 import { useAuthStore } from './store/authStore'
 
 function AuthenticatedRedirect({ children }: { children: React.ReactNode }) {
-  const token = useAuthStore((s) => s.token)
-  if (token) {
+  const user = useAuthStore((s) => s.user)
+  if (user) {
     return <Navigate to="/" replace />
   }
   return children
@@ -19,7 +20,8 @@ function AuthenticatedRedirect({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Routes>
+    <SessionBootstrap>
+      <Routes>
       <Route
         path="/login"
         element={
@@ -57,6 +59,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </SessionBootstrap>
   )
 }

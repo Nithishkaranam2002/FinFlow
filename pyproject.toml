@@ -50,6 +50,9 @@ dependencies = [
     "tenacity>=9.0.0",
     "httpx>=0.28.1",
     "resend>=2.6.0",
+    "boto3>=1.35.0",
+    "prometheus-client>=0.21.0",
+    "sentry-sdk>=2.19.0",
     "qdrant-client>=1.13.0,<1.14.0",
     "langgraph-checkpoint-postgres>=2.0.0",
 ]

@@ -15,6 +15,7 @@ from core.database import async_session_factory
 from core.kafka import TOPIC_INVOICE_RECEIVED, kafka_producer_manager
 from models.invoice import Invoice, InvoiceStatus
 from services.audit import log_audit_event
+from services.invoice_documents import build_invoice_kafka_payload, load_invoice_bytes
 
 logger = structlog.get_logger(__name__)
 SYSTEM_ACTOR_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -43,8 +44,9 @@ async def _recover_stale_invoices() -> dict:
 
     for invoice in stale_invoices:
         flags = invoice.flags or {}
+        storage_key = flags.get("storage_key")
         file_b64 = flags.get("file_base64")
-        if not file_b64:
+        if not storage_key and not file_b64:
             async with async_session_factory() as session:
                 db_invoice = await session.get(Invoice, invoice.id)
                 if db_invoice is None:
@@ -70,18 +72,22 @@ async def _recover_stale_invoices() -> dict:
             continue
 
         try:
+            load_invoice_bytes(storage_key=storage_key, file_base64=file_b64)
+            payload = build_invoice_kafka_payload(
+                invoice_id=invoice.id,
+                tenant_id=invoice.tenant_id,
+                vendor_id=invoice.vendor_id,
+                filename=flags.get("upload_filename", "invoice.pdf"),
+                content_type=flags.get("upload_content_type", "application/pdf"),
+                storage_key=storage_key or "",
+                uploaded_by=SYSTEM_ACTOR_ID,
+                recovery=True,
+            )
+            if not storage_key:
+                payload["file_base64"] = file_b64
             await kafka_producer_manager.send(
                 TOPIC_INVOICE_RECEIVED,
-                {
-                    "invoice_id": str(invoice.id),
-                    "tenant_id": str(invoice.tenant_id),
-                    "vendor_id": str(invoice.vendor_id),
-                    "filename": flags.get("upload_filename", "invoice.pdf"),
-                    "content_type": flags.get("upload_content_type", "application/pdf"),
-                    "file_base64": file_b64,
-                    "uploaded_by": str(SYSTEM_ACTOR_ID),
-                    "recovery": True,
-                },
+                payload,
                 key=str(invoice.id),
             )
             async with async_session_factory() as session:

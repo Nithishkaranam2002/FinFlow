@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import logging
 
 import structlog
-from fastapi import Depends, FastAPI, status
+from fastapi import Depends, FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -21,6 +21,8 @@ from core.config import get_settings
 from core.database import engine, get_db
 from core.health import gather_health
 from core.kafka import kafka_producer_manager
+from core.metrics import PrometheusMiddleware, metrics_payload
+from core.storage import ensure_bucket
 
 API_VERSION = "1.0.0"
 logger = structlog.get_logger(__name__)
@@ -47,6 +49,12 @@ def configure_logging() -> None:
 async def lifespan(app: FastAPI):
     configure_logging()
     settings = get_settings()
+
+    if settings.sentry_dsn:
+        import sentry_sdk
+
+        sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.app_env)
+
     logger.info("application_starting", app=settings.app_name, env=settings.app_env)
 
     try:
@@ -61,6 +69,14 @@ async def lifespan(app: FastAPI):
         await kafka_producer_manager.start()
     except Exception:
         logger.warning("kafka_producer_unavailable", exc_info=True)
+
+    try:
+        ensure_bucket()
+        logger.info("object_storage_ready")
+    except Exception:
+        logger.exception("object_storage_init_failed")
+        if settings.is_production:
+            raise
 
     try:
         await init_checkpointer()
@@ -111,6 +127,8 @@ else:
     )
 
 app.add_middleware(TenantContextMiddleware)
+if settings.metrics_enabled:
+    app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
@@ -126,6 +144,12 @@ app.include_router(
 )
 app.include_router(vendors.router, prefix="/api/v1/vendors", tags=["vendors"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
+
+
+@app.get("/metrics")
+async def prometheus_metrics() -> Response:
+    payload, content_type = metrics_payload()
+    return Response(content=payload, media_type=content_type)
 
 
 @app.get("/live")

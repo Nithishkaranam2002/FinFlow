@@ -7,6 +7,7 @@ import {
   Settings,
   Sparkles,
 } from 'lucide-react'
+import { logout } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
 
 const navItems = [
@@ -17,8 +18,12 @@ const navItems = [
 ]
 
 export function Sidebar() {
-  const logout = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
+
+  async function handleLogout() {
+    await logout()
+    window.location.assign('/login')
+  }
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col bg-gradient-to-b from-primary-900 via-primary-900 to-primary-800 text-white shadow-[var(--shadow-elevated)]">
@@ -65,7 +70,7 @@ export function Sidebar() {
         ) : null}
         <button
           type="button"
-          onClick={logout}
+          onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-indigo-100 transition-colors hover:bg-white/10 hover:text-white"
         >
           <LogOut className="h-4 w-4" />

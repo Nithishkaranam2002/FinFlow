@@ -192,6 +192,28 @@ services:
           cpus: "0.25"
           memory: 256M
 
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: finflow-minio
+    restart: unless-stopped
+    networks:
+      - finflow-network
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: finflow
+      MINIO_ROOT_PASSWORD: finflow123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   api:
     build:
       context: .
@@ -211,6 +233,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       QDRANT_URL: http://qdrant:6333
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: finflow
+      S3_SECRET_KEY: finflow123
+      S3_BUCKET: finflow-documents
       APP_ENV: development
       LOG_LEVEL: debug
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
@@ -230,6 +256,8 @@ services:
       kafka:
         condition: service_healthy
       qdrant:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -263,6 +291,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       QDRANT_URL: http://qdrant:6333
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: finflow
+      S3_SECRET_KEY: finflow123
+      S3_BUCKET: finflow-documents
       APP_ENV: development
       LOG_LEVEL: debug
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
@@ -282,6 +314,8 @@ services:
       kafka:
         condition: service_healthy
       qdrant:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     deploy:
       resources:
@@ -345,3 +379,5 @@ volumes:
     name: finflow-api-venv
   qdrant_data:
     name: finflow-qdrant-data
+  minio_data:
+    name: finflow-minio-data

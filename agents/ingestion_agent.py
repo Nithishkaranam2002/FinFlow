@@ -466,9 +466,16 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
         await session.commit()
 
     if not raw_file_bytes:
-        embedded = (state.get("metadata") or {}).get("file_base64")
-        if embedded:
-            raw_file_bytes = base64.b64decode(embedded)
+        metadata = state.get("metadata") or {}
+        storage_key = metadata.get("storage_key")
+        embedded = metadata.get("file_base64")
+        if storage_key or embedded:
+            from services.invoice_documents import load_invoice_bytes
+
+            raw_file_bytes = load_invoice_bytes(
+                storage_key=storage_key,
+                file_base64=embedded,
+            )
         else:
             return {
                 **update,
@@ -639,16 +646,19 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
 
 async def extract_from_kafka_payload(payload: dict[str, Any]) -> tuple[dict[str, Any], float]:
     """Run ingestion extraction from a Kafka invoice.received payload."""
-    file_b64 = payload.get("file_base64")
-    if not file_b64:
-        raise ValueError("Missing file_base64 in payload")
+    from services.invoice_documents import load_invoice_bytes
+
+    raw_bytes = load_invoice_bytes(
+        storage_key=payload.get("storage_key"),
+        file_base64=payload.get("file_base64"),
+    )
 
     content_type = payload.get("content_type", "application/pdf")
     file_type = "pdf" if "pdf" in content_type else "png"
     state: FinFlowState = {
         "invoice_id": payload["invoice_id"],
         "tenant_id": payload["tenant_id"],
-        "raw_file_bytes": base64.b64decode(file_b64),
+        "raw_file_bytes": raw_bytes,
         "file_type": file_type,
         "step_history": [],
         "metadata": payload,

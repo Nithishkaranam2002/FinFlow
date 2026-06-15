@@ -6,15 +6,17 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from datetime import datetime, timezone
 
 import structlog
-from aiokafka import AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
 from agents.reconciliation_agent import run_reconciliation_pipeline
 from core.config import get_settings
 from core.kafka import (
     TOPIC_RECONCILIATION_COMPLETED,
     TOPIC_RECONCILIATION_STARTED,
+    TOPIC_RECONCILIATION_STARTED_DLQ,
     KafkaProducerManager,
 )
 from core.tenant import set_current_tenant_id
@@ -22,6 +24,22 @@ from core.tenant import set_current_tenant_id
 logger = structlog.get_logger(__name__)
 
 CONSUMER_GROUP = "finflow-reconciliation-workers"
+
+
+async def publish_reconciliation_dlq(
+    payload: dict,
+    error: str,
+    producer: AIOKafkaProducer,
+) -> None:
+    await producer.send_and_wait(
+        TOPIC_RECONCILIATION_STARTED_DLQ,
+        value={
+            **payload,
+            "error": error,
+            "failed_at": datetime.now(timezone.utc).isoformat(),
+        },
+        key=str(payload.get("bank_statement_id")),
+    )
 
 
 async def process_reconciliation_started(
@@ -100,9 +118,15 @@ async def run_reconciliation_worker() -> None:
         group_id=CONSUMER_GROUP,
         value_deserializer=lambda value: json.loads(value.decode("utf-8")),
         auto_offset_reset="earliest",
-        enable_auto_commit=True,
+        enable_auto_commit=False,
+    )
+    dlq_producer = AIOKafkaProducer(
+        bootstrap_servers=settings.kafka_brokers,
+        value_serializer=lambda value: json.dumps(value).encode("utf-8"),
+        key_serializer=lambda key: key.encode("utf-8") if key is not None else None,
     )
     await consumer.start()
+    await dlq_producer.start()
     logger.info(
         "reconciliation_worker_started",
         topic=TOPIC_RECONCILIATION_STARTED,
@@ -113,13 +137,23 @@ async def run_reconciliation_worker() -> None:
         async for message in consumer:
             try:
                 await process_reconciliation_started(message.value, producer)
-            except Exception:
+                await consumer.commit()
+            except Exception as exc:
                 logger.exception(
                     "reconciliation_message_processing_failed",
                     offset=message.offset,
                     partition=message.partition,
                 )
+                try:
+                    await publish_reconciliation_dlq(message.value, str(exc), dlq_producer)
+                except Exception:
+                    logger.exception(
+                        "reconciliation_dlq_publish_failed",
+                        offset=message.offset,
+                    )
+                await consumer.commit()
     finally:
+        await dlq_producer.stop()
         await consumer.stop()
         await producer.stop()
         logger.info("reconciliation_worker_stopped")

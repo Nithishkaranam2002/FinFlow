@@ -3,12 +3,12 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2, LockKeyhole } from 'lucide-react'
 import { isAxiosError } from 'axios'
-import { fetchMe, login } from '../api/invoices'
+import { login } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const setAuth = useAuthStore((s) => s.setAuth)
+  const setUser = useAuthStore((s) => s.setUser)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -20,9 +20,8 @@ export function LoginPage() {
     setLoading(true)
 
     try {
-      const tokenResponse = await login(email.trim(), password)
-      const user = await fetchMe(tokenResponse.access_token)
-      setAuth(tokenResponse.access_token, user)
+      const response = await login(email.trim(), password)
+      setUser(response.user)
       navigate('/')
     } catch (err) {
       if (isAxiosError(err)) {

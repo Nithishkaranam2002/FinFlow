@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field, HttpUrl, model_validator
+from pydantic import Field, HttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from core.secrets import get_secret
 
 
 class Settings(BaseSettings):
@@ -29,6 +31,21 @@ class Settings(BaseSettings):
     max_upload_size_bytes: int = 10 * 1024 * 1024
     stale_invoice_minutes: int = 30
     log_level: str = "info"
+    auth_cookie_name: str = "finflow_access_token"
+    sentry_dsn: str = ""
+    metrics_enabled: bool = True
+
+    # Object storage (S3 / MinIO)
+    s3_endpoint_url: str = "http://localhost:9000"
+    s3_access_key: str = "finflow"
+    s3_secret_key: str = "finflow123"
+    s3_bucket: str = "finflow-documents"
+    s3_region: str = "us-east-1"
+    s3_use_ssl: bool = False
+
+    # Secrets backend: env | aws
+    secrets_backend: str = "env"
+    aws_secrets_arn: str = ""
 
     # Database
     database_url: str = (
@@ -81,6 +98,13 @@ class Settings(BaseSettings):
     # JWT auth
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
+
+    @field_validator("secret_key", mode="before")
+    @classmethod
+    def resolve_secret_key(cls, value: str | None) -> str:
+        if not value or value == "change-me-in-production":
+            return get_secret("SECRET_KEY", value or "change-me-in-production")
+        return value
 
     @property
     def is_development(self) -> bool:

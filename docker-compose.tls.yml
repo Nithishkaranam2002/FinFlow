@@ -1,0 +1,13 @@
+name: finflow-tls
+
+services:
+  frontend:
+    ports:
+      - "8443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NGINX_CONF: nginx.tls.conf

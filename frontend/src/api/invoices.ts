@@ -6,25 +6,6 @@ import type {
   InvoiceStatus,
 } from '../types'
 
-export async function login(email: string, password: string) {
-  const body = new URLSearchParams()
-  body.append('username', email)
-  body.append('password', password)
-  const { data } = await apiClient.post<{ access_token: string; token_type: string }>(
-    '/auth/login',
-    body,
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
-  )
-  return data
-}
-
-export async function fetchMe(token?: string) {
-  const { data } = await apiClient.get('/auth/me', {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  })
-  return data
-}
-
 export async function listInvoices(params?: {
   status?: InvoiceStatus
   vendor_id?: string

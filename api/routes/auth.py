@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 
@@ -9,9 +9,23 @@ from core.config import get_settings
 from core.security import create_access_token, get_password_hash, verify_password
 from models.tenant import Tenant
 from models.user import User
-from schemas.auth import TokenResponse, UserRegister, UserResponse
+from schemas.auth import LoginResponse, UserRegister, UserResponse
 
 router = APIRouter(tags=["auth"])
+
+
+def _set_auth_cookie(response: Response, token: str) -> None:
+    settings = get_settings()
+    secure = settings.app_base_url.startswith("https://")
+    response.set_cookie(
+        key=settings.auth_cookie_name,
+        value=token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=settings.jwt_expire_minutes * 60,
+        path="/",
+    )
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -58,11 +72,12 @@ async def register(payload: UserRegister, db: DbSession) -> User:
     return user
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 async def login(
+    response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DbSession,
-) -> TokenResponse:
+) -> LoginResponse:
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
     if user is None or not verify_password(form_data.password, user.hashed_password):
@@ -85,7 +100,14 @@ async def login(
             "role": user.role.value,
         }
     )
-    return TokenResponse(access_token=token)
+    _set_auth_cookie(response, token)
+    return LoginResponse(user=UserResponse.model_validate(user))
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(response: Response) -> None:
+    settings = get_settings()
+    response.delete_cookie(key=settings.auth_cookie_name, path="/")
 
 
 @router.get("/me", response_model=UserResponse)

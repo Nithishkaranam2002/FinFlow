@@ -3,29 +3,23 @@ import { persist } from 'zustand/middleware'
 import type { User } from '../types'
 
 interface AuthState {
-  token: string | null
   user: User | null
-  setAuth: (token: string, user: User) => void
-  setToken: (token: string) => void
   setUser: (user: User) => void
-  logout: () => void
+  clearUser: () => void
   isAuthenticated: () => boolean
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      token: null,
       user: null,
-      setAuth: (token, user) => set({ token, user }),
-      setToken: (token) => set({ token }),
       setUser: (user) => set({ user }),
-      logout: () => set({ token: null, user: null }),
-      isAuthenticated: () => Boolean(get().token),
+      clearUser: () => set({ user: null }),
+      isAuthenticated: () => Boolean(get().user),
     }),
     {
-      name: 'finflow-auth',
-      partialize: (state) => ({ token: state.token, user: state.user }),
+      name: 'finflow-user',
+      partialize: (state) => ({ user: state.user }),
     },
   ),
 )

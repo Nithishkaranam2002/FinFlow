@@ -10,6 +10,7 @@ import structlog
 from agents.graph import invoice_graph
 from agents.state import FinFlowState, create_initial_state
 from models.invoice import Invoice
+from services.invoice_documents import load_invoice_bytes
 
 logger = structlog.get_logger(__name__)
 
@@ -17,10 +18,14 @@ logger = structlog.get_logger(__name__)
 def build_state_from_kafka_payload(payload: dict[str, Any]) -> FinFlowState:
     content_type = payload.get("content_type", "application/pdf")
     file_type = "pdf" if "pdf" in content_type else "png"
+    raw_bytes = load_invoice_bytes(
+        storage_key=payload.get("storage_key"),
+        file_base64=payload.get("file_base64"),
+    )
     return create_initial_state(
         invoice_id=str(payload["invoice_id"]),
         tenant_id=str(payload["tenant_id"]),
-        raw_file_bytes=base64.b64decode(payload["file_base64"]),
+        raw_file_bytes=raw_bytes,
         file_type=file_type,
         metadata=payload,
     )

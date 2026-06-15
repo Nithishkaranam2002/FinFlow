@@ -1,4 +1,3 @@
-import base64
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -27,6 +26,12 @@ from services.invoice_pipeline import build_state_from_invoice, run_invoice_pipe
 from services.audit import log_audit_event
 from services.extraction_quality import log_human_correction_score
 from services.graph_resume import resume_invoice_approval
+from services.invoice_documents import (
+    build_invoice_kafka_payload,
+    invoice_flags_for_upload,
+    load_invoice_bytes,
+    store_invoice_file,
+)
 from services.mem0_corrections import store_vendor_correction_pattern
 
 router = APIRouter(tags=["invoices"])
@@ -65,7 +70,6 @@ async def upload_invoice(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
 
     file_bytes = await read_upload_with_limit(file)
-    file_b64 = base64.b64encode(file_bytes).decode("utf-8")
     invoice = Invoice(
         tenant_id=current_user.tenant_id,
         vendor_id=vendor_id,
@@ -74,26 +78,35 @@ async def upload_invoice(
         currency="USD",
         status=InvoiceStatus.RECEIVED,
         line_items=[],
-        flags={
-            "upload_filename": file.filename,
-            "upload_content_type": file.content_type,
-            "file_base64": file_b64,
-        },
+        flags={},
     )
     db.add(invoice)
     await db.flush()
 
+    storage_key = store_invoice_file(
+        tenant_id=current_user.tenant_id,
+        invoice_id=invoice.id,
+        file_bytes=file_bytes,
+        filename=file.filename,
+        content_type=file.content_type or "application/pdf",
+    )
+    invoice.flags = invoice_flags_for_upload(
+        filename=file.filename,
+        content_type=file.content_type,
+        storage_key=storage_key,
+    )
+
     await producer.send(
         TOPIC_INVOICE_RECEIVED,
-        {
-            "invoice_id": str(invoice.id),
-            "tenant_id": str(current_user.tenant_id),
-            "vendor_id": str(vendor_id),
-            "filename": file.filename,
-            "content_type": file.content_type,
-            "file_base64": file_b64,
-            "uploaded_by": str(current_user.id),
-        },
+        build_invoice_kafka_payload(
+            invoice_id=invoice.id,
+            tenant_id=current_user.tenant_id,
+            vendor_id=vendor_id,
+            filename=file.filename,
+            content_type=file.content_type or "application/pdf",
+            storage_key=storage_key,
+            uploaded_by=current_user.id,
+        ),
         key=str(invoice.id),
     )
 
@@ -196,9 +209,9 @@ async def retry_invoice_extraction(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
 
     flags = invoice.flags or {}
-    file_b64 = flags.get("file_base64")
+    storage_key = flags.get("storage_key")
     content_type = flags.get("upload_content_type", "application/pdf")
-    if not file_b64:
+    if not storage_key and not flags.get("file_base64"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Original upload file is not stored for this invoice. Re-upload the document.",
@@ -206,20 +219,19 @@ async def retry_invoice_extraction(
 
     old_status = invoice.status
     invoice.status = InvoiceStatus.RECEIVED
-    await producer.send(
-        TOPIC_INVOICE_RECEIVED,
-        {
-            "invoice_id": str(invoice.id),
-            "tenant_id": str(current_user.tenant_id),
-            "vendor_id": str(invoice.vendor_id),
-            "filename": flags.get("upload_filename", "invoice.pdf"),
-            "content_type": content_type,
-            "file_base64": file_b64,
-            "uploaded_by": str(current_user.id),
-            "retry": True,
-        },
-        key=str(invoice.id),
+    kafka_payload = build_invoice_kafka_payload(
+        invoice_id=invoice.id,
+        tenant_id=current_user.tenant_id,
+        vendor_id=invoice.vendor_id,
+        filename=flags.get("upload_filename", "invoice.pdf"),
+        content_type=content_type,
+        storage_key=storage_key or "",
+        uploaded_by=current_user.id,
+        retry=True,
     )
+    if not storage_key:
+        kafka_payload["file_base64"] = flags.get("file_base64")
+    await producer.send(TOPIC_INVOICE_RECEIVED, kafka_payload, key=str(invoice.id))
 
     await log_audit_event(
         db,
