@@ -1,0 +1,4 @@
+# Minimal Temporal dynamic config for local/CI (PostgreSQL)
+frontend.enableClientVersionCheck:
+  - value: false
+    constraints: {}

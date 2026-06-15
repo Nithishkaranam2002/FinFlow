@@ -14,6 +14,7 @@ up:
 
 fix:
 	$(COMPOSE) exec $(API_SERVICE) uv sync
+	bash scripts/ensure-temporal-databases.sh || true
 	$(COMPOSE) up -d minio temporal temporal-ui temporal-worker frontend
 	$(COMPOSE) restart api
 	$(MAKE) wait-api

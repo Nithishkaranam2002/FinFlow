@@ -117,15 +117,23 @@ jobs:
         run: |
           export SECRET_KEY=ci-e2e-secret-key
           docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:8000/health >/dev/null && curl -sf http://localhost:8088/ >/dev/null; then
+          for i in $(seq 1 90); do
+            temporal_ok=0
+            api_ok=0
+            ui_ok=0
+            curl -sf http://localhost:8000/health >/dev/null && api_ok=1
+            curl -sf http://localhost:8088/ >/dev/null && ui_ok=1
+            docker compose exec -T temporal tctl --address temporal:7233 cluster health >/dev/null 2>&1 && temporal_ok=1
+            if [ "$api_ok" = "1" ] && [ "$ui_ok" = "1" ] && [ "$temporal_ok" = "1" ]; then
               echo "Stack is ready"
               exit 0
             fi
             sleep 5
           done
           echo "Stack failed to become healthy"
-          docker compose logs
+          docker compose ps -a
+          docker compose logs temporal --tail 80
+          docker compose logs api --tail 40
           exit 1
 
       - name: Seed database

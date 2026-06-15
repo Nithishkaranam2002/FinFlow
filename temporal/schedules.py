@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 import structlog
 from temporalio.client import (
     Client,
@@ -27,25 +29,26 @@ SCHEDULES: list[tuple[str, object, ScheduleSpec]] = [
     (
         "finflow-approval-escalation",
         ApprovalEscalationWorkflow.run,
-        ScheduleSpec(intervals=[ScheduleIntervalSpec(every_hours=1)]),
+        ScheduleSpec(intervals=[ScheduleIntervalSpec(every=timedelta(hours=1))]),
     ),
     (
         "finflow-stale-invoice-recovery",
         StaleInvoiceRecoveryWorkflow.run,
-        ScheduleSpec(intervals=[ScheduleIntervalSpec(every_minutes=15)]),
+        ScheduleSpec(intervals=[ScheduleIntervalSpec(every=timedelta(minutes=15))]),
     ),
     (
         "finflow-extraction-quality",
         ExtractionQualityWorkflow.run,
-        ScheduleSpec(intervals=[ScheduleIntervalSpec(every_hours=1)]),
+        ScheduleSpec(intervals=[ScheduleIntervalSpec(every=timedelta(hours=1))]),
     ),
 ]
 
 
-def _build_schedule(workflow_run: object, spec: ScheduleSpec) -> Schedule:
+def _build_schedule(schedule_id: str, workflow_run: object, spec: ScheduleSpec) -> Schedule:
     return Schedule(
         action=ScheduleActionStartWorkflow(
             workflow_run,
+            id=schedule_id,
             task_queue=MAINTENANCE_TASK_QUEUE,
         ),
         spec=spec,
@@ -55,7 +58,7 @@ def _build_schedule(workflow_run: object, spec: ScheduleSpec) -> Schedule:
 
 async def ensure_schedules(client: Client) -> None:
     for schedule_id, workflow_run, spec in SCHEDULES:
-        schedule = _build_schedule(workflow_run, spec)
+        schedule = _build_schedule(schedule_id, workflow_run, spec)
         try:
             handle = client.get_schedule_handle(schedule_id)
             await handle.update(lambda _: ScheduleUpdate(schedule=schedule))

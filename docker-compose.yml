@@ -24,7 +24,7 @@ x-worker-base: &worker-base
     TEMPORAL_ENABLED: "true"
     APP_ENV: development
     LOG_LEVEL: debug
-    CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8088
     USE_POSTGRES_CHECKPOINTER: "false"
   volumes:
     - .:/app
@@ -280,16 +280,22 @@ services:
       POSTGRES_USER: finflow
       POSTGRES_PWD: finflow123
       POSTGRES_SEEDS: postgres
+      SKIP_DB_CREATE: "true"
+      BIND_ON_IP: "0.0.0.0"
       DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CLI_ADDRESS: temporal:7233
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/7233'"]
-      interval: 15s
-      timeout: 5s
-      retries: 15
-      start_period: 90s
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 120s
 
   temporal-ui:
     image: temporalio/ui:2.31.2
@@ -333,7 +339,7 @@ services:
       TEMPORAL_ENABLED: "true"
       APP_ENV: development
       LOG_LEVEL: debug
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8088
       USE_POSTGRES_CHECKPOINTER: "false"
     volumes:
       - .:/app
@@ -354,7 +360,7 @@ services:
       minio:
         condition: service_healthy
       temporal:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s
