@@ -15,10 +15,11 @@ export function SettingsPage() {
   const healthQuery = useQuery({
     queryKey: ['health'],
     queryFn: async () => {
-      const apiRoot =
-        import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/v1\/?$/, '') ||
-        'http://localhost:8000'
-      const url = import.meta.env.DEV ? '/health' : `${apiRoot}/health`
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+      const url =
+        import.meta.env.DEV || apiBase.startsWith('/')
+          ? '/health'
+          : `${apiBase.replace(/\/api\/v1\/?$/, '')}/health`
       const response = await fetch(url)
       if (!response.ok) throw new Error('Health check failed')
       return (await response.json()) as HealthResponse

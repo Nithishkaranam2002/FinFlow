@@ -280,7 +280,6 @@ services:
       POSTGRES_USER: finflow
       POSTGRES_PWD: finflow123
       POSTGRES_SEEDS: postgres
-      SKIP_DB_CREATE: "true"
       BIND_ON_IP: "0.0.0.0"
       DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
       TEMPORAL_ADDRESS: temporal:7233
@@ -291,11 +290,11 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
-      interval: 10s
-      timeout: 10s
-      retries: 18
-      start_period: 120s
+      test: ["CMD", "tctl", "--address", "127.0.0.1:7233", "cluster", "health"]
+      interval: 15s
+      timeout: 15s
+      retries: 30
+      start_period: 180s
 
   temporal-ui:
     image: temporalio/ui:2.31.2
@@ -307,7 +306,7 @@ services:
       - "8233:8080"
     depends_on:
       temporal:
-        condition: service_healthy
+        condition: service_started
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_CORS_ORIGINS: http://localhost:8233
@@ -397,7 +396,7 @@ services:
       redis:
         condition: service_healthy
       temporal:
-        condition: service_healthy
+        condition: service_started
       minio:
         condition: service_healthy
       qdrant:
