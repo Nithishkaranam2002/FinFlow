@@ -14,7 +14,7 @@ services:
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
-    volumes: []
+    volumes: !reset []
     command:
       [
         "uvicorn",
@@ -37,7 +37,7 @@ services:
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
-    volumes: []
+    volumes: !reset []
 
   reconciliation-worker:
     environment:
@@ -48,7 +48,7 @@ services:
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
-    volumes: []
+    volumes: !reset []
 
   temporal-worker:
     environment:
@@ -60,7 +60,7 @@ services:
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
-    volumes: []
+    volumes: !reset []
 
   frontend:
     build:

@@ -5,6 +5,7 @@ services:
     environment:
       SECRET_KEY: ci-e2e-secret-key
       USE_POSTGRES_CHECKPOINTER: "false"
+    volumes: !reset []
     command:
       [
         "uvicorn",
@@ -20,6 +21,11 @@ services:
   temporal-worker:
     environment:
       USE_POSTGRES_CHECKPOINTER: "false"
+    volumes: !reset []
+
+  reconciliation-worker:
+    profiles: ["ci-skip"]
+    volumes: !reset []
 
   redis:
     image: public.ecr.aws/docker/library/redis:7-alpine

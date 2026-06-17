@@ -136,7 +136,7 @@ jobs:
             exit 1
           fi
 
-          $COMPOSE up -d --build
+          $COMPOSE up -d --build api frontend
           for i in $(seq 1 90); do
             temporal_ok=0
             api_ok=0
