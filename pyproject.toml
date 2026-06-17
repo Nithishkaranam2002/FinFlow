@@ -58,11 +58,13 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "deepeval>=2.1.6",
+test = [
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.0",
     "pytest-github-actions-annotate-failures>=0.3.0",
+]
+eval = [
+    "deepeval>=2.1.6",
 ]
 
 [build-system]

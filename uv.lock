@@ -593,8 +593,10 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-dev = [
+eval = [
     { name = "deepeval" },
+]
+test = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-github-actions-annotate-failures" },
@@ -649,8 +651,8 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "deepeval", specifier = ">=2.1.6" },
+eval = [{ name = "deepeval", specifier = ">=2.1.6" }]
+test = [
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pytest-asyncio", specifier = ">=0.25.0" },
     { name = "pytest-github-actions-annotate-failures", specifier = ">=0.3.0" },

@@ -12,24 +12,20 @@ permissions:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     env:
-      DATABASE_URL: postgresql+asyncpg://finflow:finflow123@localhost:5432/finflow_db
-      DATABASE_SYNC_URL: postgresql://finflow:finflow123@localhost:5432/finflow_db
-      REDIS_URL: redis://localhost:6379/0
-      S3_ENDPOINT_URL: http://localhost:9000
-      S3_ACCESS_KEY: finflow
-      S3_SECRET_KEY: finflow123
-      S3_BUCKET: finflow-documents
       APP_ENV: development
       SECRET_KEY: ci-test-secret-key
       UV_PYTHON_DOWNLOADS: never
+      UV_LINK_MODE: copy
+      UV_HTTP_TIMEOUT: 120
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -38,23 +34,24 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          python-version: "3.11"
           cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies
-        timeout-minutes: 15
-        run: uv sync --frozen --dev
-
-      - name: Start test services
+        timeout-minutes: 10
         run: |
-          set -euo pipefail
-          source scripts/ci-docker-retry.sh
-          COMPOSE_TEST="docker compose -f docker-compose.test.yml"
-          pull_compose_images $COMPOSE_TEST
-          $COMPOSE_TEST up -d --wait
+          echo "Using Python: $(python --version) at $(which python)"
+          uv sync --frozen --group test
 
       - name: Run unit tests
         run: uv run pytest tests/ -v
+
+  backend-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: backend-tests
+
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Build backend Docker image
         run: |
@@ -64,6 +61,7 @@ jobs:
 
   frontend-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -93,7 +91,8 @@ jobs:
 
   e2e-smoke:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-build]
+    timeout-minutes: 45
+    needs: [backend-docker, frontend-build]
     env:
       SECRET_KEY: ci-e2e-secret-key
 
@@ -101,6 +100,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Start stack
+        timeout-minutes: 30
         run: |
           set -euo pipefail
           source scripts/ci-docker-retry.sh
