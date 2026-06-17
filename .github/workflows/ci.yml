@@ -12,6 +12,7 @@ permissions:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     env:
       DATABASE_URL: postgresql+asyncpg://finflow:finflow123@localhost:5432/finflow_db
@@ -23,9 +24,26 @@ jobs:
       S3_BUCKET: finflow-documents
       APP_ENV: development
       SECRET_KEY: ci-test-secret-key
+      UV_PYTHON_DOWNLOADS: never
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.11"
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        timeout-minutes: 15
+        run: uv sync --frozen --dev
 
       - name: Start test services
         run: |
@@ -34,14 +52,6 @@ jobs:
           COMPOSE_TEST="docker compose -f docker-compose.test.yml"
           pull_compose_images $COMPOSE_TEST
           $COMPOSE_TEST up -d --wait
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --frozen --dev
 
       - name: Run unit tests
         run: uv run pytest tests/ -v
