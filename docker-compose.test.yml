@@ -1,0 +1,43 @@
+name: finflow-test
+
+services:
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: finflow
+      POSTGRES_PASSWORD: finflow123
+      POSTGRES_DB: finflow_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finflow -d finflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: public.ecr.aws/docker/library/redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
+    ports:
+      - "9000:9000"
+    environment:
+      MINIO_ROOT_USER: finflow
+      MINIO_ROOT_PASSWORD: finflow123
+    command: server /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s

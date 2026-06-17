@@ -20,3 +20,9 @@ services:
   temporal-worker:
     environment:
       USE_POSTGRES_CHECKPOINTER: "false"
+
+  redis:
+    image: public.ecr.aws/docker/library/redis:7-alpine
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z

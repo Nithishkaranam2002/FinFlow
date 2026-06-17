@@ -13,45 +13,6 @@ jobs:
   backend-tests:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: finflow
-          POSTGRES_PASSWORD: finflow123
-          POSTGRES_DB: finflow_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U finflow -d finflow_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
-      minio:
-        image: minio/minio:RELEASE.2024-12-18T13-15-44Z
-        env:
-          MINIO_ROOT_USER: finflow
-          MINIO_ROOT_PASSWORD: finflow123
-        ports:
-          - 9000:9000
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-        command: server /data
-
     env:
       DATABASE_URL: postgresql+asyncpg://finflow:finflow123@localhost:5432/finflow_db
       DATABASE_SYNC_URL: postgresql://finflow:finflow123@localhost:5432/finflow_db
@@ -66,6 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Start test services
+        run: |
+          set -euo pipefail
+          source scripts/ci-docker-retry.sh
+          COMPOSE_TEST="docker compose -f docker-compose.test.yml"
+          pull_compose_images $COMPOSE_TEST
+          $COMPOSE_TEST up -d --wait
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -78,7 +47,10 @@ jobs:
         run: uv run pytest tests/ -v
 
       - name: Build backend Docker image
-        run: docker build -t finflow-api:ci .
+        run: |
+          source scripts/ci-docker-retry.sh
+          mirror_base_images
+          docker build -t finflow-api:ci .
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -104,7 +76,10 @@ jobs:
 
       - name: Build frontend Docker image
         working-directory: ${{ github.workspace }}
-        run: docker build -f frontend/Dockerfile -t finflow-frontend:ci .
+        run: |
+          source scripts/ci-docker-retry.sh
+          mirror_base_images
+          docker build -f frontend/Dockerfile -t finflow-frontend:ci .
 
   e2e-smoke:
     runs-on: ubuntu-latest
@@ -118,7 +93,10 @@ jobs:
       - name: Start stack
         run: |
           set -euo pipefail
+          source scripts/ci-docker-retry.sh
           COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ci.yml"
+          pull_compose_images $COMPOSE
+          mirror_base_images
 
           $COMPOSE up -d postgres redis zookeeper kafka qdrant minio
           for i in $(seq 1 60); do
