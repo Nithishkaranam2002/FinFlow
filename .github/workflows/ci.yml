@@ -148,6 +148,7 @@ jobs:
         run: |
           COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ci.yml"
           $COMPOSE exec -T api uv run alembic upgrade head
+          $COMPOSE exec -T api uv run python scripts/generate_synthetic_data.py
           $COMPOSE exec -T api uv run python scripts/seed_database.py --reset
 
       - uses: actions/setup-node@v4

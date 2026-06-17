@@ -348,10 +348,19 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.data.exists():
-        raise SystemExit(
-            f"Data file not found: {args.data}\n"
-            "Run: uv run python scripts/generate_synthetic_data.py"
+        import runpy
+
+        print(f"Data file not found: {args.data}")
+        print("Generating synthetic_data.json...")
+        runpy.run_path(
+            str(PROJECT_ROOT / "scripts" / "generate_synthetic_data.py"),
+            run_name="__main__",
         )
+        if not args.data.exists():
+            raise SystemExit(
+                f"Data file not found after generation: {args.data}\n"
+                "Run: uv run python scripts/generate_synthetic_data.py"
+            )
 
     counts, test_users = asyncio.run(seed_database(args.data, reset=args.reset))
 
