@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import functools
 import time
-from typing import Any, Callable, TypeVar
+from contextlib import contextmanager
+from typing import Any, Callable, Iterator, TypeVar
 
 import structlog
 from langfuse import Langfuse, propagate_attributes
@@ -29,19 +30,40 @@ def get_langfuse_client() -> Langfuse:
     )
 
 
-def _build_trace_tags(
+def build_trace_tags(
     *,
     tenant_id: str,
     invoice_id: str,
     agent_name: str,
-    environment: str,
+    environment: str | None = None,
 ) -> list[str]:
+    settings = get_settings()
+    env = environment or settings.app_env
     return [
         f"tenant_id:{tenant_id}",
         f"invoice_id:{invoice_id}",
         f"agent_name:{agent_name}",
-        f"environment:{environment}",
+        f"environment:{env}",
     ]
+
+
+def build_trace_metadata(
+    *,
+    tenant_id: str,
+    invoice_id: str,
+    agent_name: str,
+    environment: str | None = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    settings = get_settings()
+    metadata = {
+        "tenant_id": tenant_id,
+        "invoice_id": invoice_id,
+        "agent_name": agent_name,
+        "environment": environment or settings.app_env,
+    }
+    metadata.update(extra)
+    return metadata
 
 
 def get_langfuse_callback_handler(
@@ -49,9 +71,39 @@ def get_langfuse_callback_handler(
     invoice_id: str,
     agent_name: str,
 ) -> CallbackHandler:
-    """Return a LangChain callback handler scoped to this trace context."""
+    """Return a LangChain callback handler scoped to tenant/invoice/agent metadata."""
     settings = get_settings()
     return CallbackHandler(public_key=settings.langfuse_public_key or None)
+
+
+@contextmanager
+def langfuse_trace_context(
+    *,
+    tenant_id: str,
+    invoice_id: str,
+    agent_name: str,
+    trace_name: str | None = None,
+    **metadata_extra: Any,
+) -> Iterator[CallbackHandler]:
+    """Attach Langfuse tags/metadata and yield a LangChain callback handler."""
+    settings = get_settings()
+    tags = build_trace_tags(
+        tenant_id=tenant_id,
+        invoice_id=invoice_id,
+        agent_name=agent_name,
+    )
+    metadata = build_trace_metadata(
+        tenant_id=tenant_id,
+        invoice_id=invoice_id,
+        agent_name=agent_name,
+        **metadata_extra,
+    )
+    with propagate_attributes(
+        tags=tags,
+        metadata=metadata,
+        trace_name=trace_name or f"{agent_name}.langchain",
+    ):
+        yield get_langfuse_callback_handler(tenant_id, invoice_id, agent_name)
 
 
 def sanitize_state(state: dict[str, Any] | None) -> dict[str, Any]:
@@ -101,23 +153,24 @@ def trace_agent_step(agent_name: str) -> Callable[[F], F]:
         @functools.wraps(func)
         async def wrapper(state: dict[str, Any], *args: Any, **kwargs: Any) -> Any:
             settings = get_settings()
+            if not settings.langfuse_enabled:
+                return await func(state, *args, **kwargs)
+
             tenant_id = str(state.get("tenant_id") or "unknown")
             invoice_id = str(
                 state.get("invoice_id") or state.get("statement_id") or "unknown"
             )
-            tags = _build_trace_tags(
+            tags = build_trace_tags(
                 tenant_id=tenant_id,
                 invoice_id=invoice_id,
                 agent_name=agent_name,
-                environment=settings.app_env,
             )
-            metadata = {
-                "tenant_id": tenant_id,
-                "invoice_id": invoice_id,
-                "agent_name": agent_name,
-                "environment": settings.app_env,
-                "node": func.__name__,
-            }
+            metadata = build_trace_metadata(
+                tenant_id=tenant_id,
+                invoice_id=invoice_id,
+                agent_name=agent_name,
+                node=func.__name__,
+            )
             client = get_langfuse_client()
             input_state = sanitize_state(state)
             started = time.perf_counter()
@@ -180,7 +233,7 @@ def score_extraction_trace(
     metadata: dict[str, Any] | None = None,
 ) -> None:
     settings = get_settings()
-    if not trace_id or not settings.langfuse_public_key:
+    if not trace_id or not settings.langfuse_enabled:
         logger.warning("langfuse_score_skipped", trace_id=trace_id, reason="disabled_or_missing_trace")
         return
 
@@ -197,15 +250,17 @@ def score_extraction_trace(
 
 
 def ensure_langfuse_env(settings: Settings | None = None) -> None:
-    """Align process env vars with settings for get_client() callers."""
+    """Align process env vars with settings for Langfuse SDK auto-discovery."""
     import os
 
     cfg = settings or get_settings()
+    host = str(cfg.langfuse_host)
     if cfg.langfuse_public_key:
         os.environ.setdefault("LANGFUSE_PUBLIC_KEY", cfg.langfuse_public_key)
     if cfg.langfuse_secret_key:
         os.environ.setdefault("LANGFUSE_SECRET_KEY", cfg.langfuse_secret_key)
-    os.environ.setdefault("LANGFUSE_HOST", str(cfg.langfuse_host))
+    os.environ.setdefault("LANGFUSE_HOST", host)
+    os.environ.setdefault("LANGFUSE_BASE_URL", host)
 
 
 ensure_langfuse_env()

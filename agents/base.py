@@ -6,7 +6,14 @@ import uuid
 from typing import Any
 
 import structlog
-from core.observability import get_langfuse_callback_handler
+from langfuse import propagate_attributes
+
+from core.observability import (
+    build_trace_metadata,
+    build_trace_tags,
+    get_langfuse_callback_handler,
+    langfuse_trace_context,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,15 +46,32 @@ class BaseAgent:
         context: dict[str, Any] | None = None,
         tier: str | None = None,
     ) -> LLMResponse:
-        return await self.gateway.acompletion(
-            messages=messages,
-            task_type=task_type,
-            agent_name=self.agent_name,
+        invoice_ref = invoice_id or "unknown"
+        tags = build_trace_tags(
             tenant_id=tenant_id,
-            invoice_id=invoice_id,
-            context=context,
-            tier=tier,
+            invoice_id=invoice_ref,
+            agent_name=self.agent_name,
         )
+        metadata = build_trace_metadata(
+            tenant_id=tenant_id,
+            invoice_id=invoice_ref,
+            agent_name=self.agent_name,
+            task_type=task_type,
+        )
+        with propagate_attributes(
+            tags=tags,
+            metadata=metadata,
+            trace_name=f"{self.agent_name}.{task_type}",
+        ):
+            return await self.gateway.acompletion(
+                messages=messages,
+                task_type=task_type,
+                agent_name=self.agent_name,
+                tenant_id=tenant_id,
+                invoice_id=invoice_id,
+                context=context,
+                tier=tier,
+            )
 
     async def invoke_llm_with_routing_context(
         self,
@@ -88,6 +112,21 @@ class BaseAgent:
             tenant_id=tenant_id,
             invoice_id=invoice_id,
             agent_name=self.agent_name,
+        )
+
+    def langfuse_trace(
+        self,
+        *,
+        tenant_id: str = "unknown",
+        invoice_id: str = "unknown",
+        trace_name: str | None = None,
+    ):
+        """Context manager that applies Langfuse tags/metadata for LangChain runs."""
+        return langfuse_trace_context(
+            tenant_id=tenant_id,
+            invoice_id=invoice_id,
+            agent_name=self.agent_name,
+            trace_name=trace_name,
         )
 
     def log_step(self, state: FinFlowState, step_name: str, **kwargs: Any) -> dict[str, Any]:

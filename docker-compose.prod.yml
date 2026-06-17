@@ -10,6 +10,10 @@ services:
       CORS_ORIGINS: http://localhost:8088,http://localhost
       APP_BASE_URL: http://localhost:8088
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY for production}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
     volumes: []
     command:
       [
@@ -29,6 +33,10 @@ services:
       DEBUG: "false"
       LOG_LEVEL: info
       USE_POSTGRES_CHECKPOINTER: "true"
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
     volumes: []
 
   reconciliation-worker:
@@ -36,6 +44,10 @@ services:
       APP_ENV: production
       DEBUG: "false"
       LOG_LEVEL: info
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
     volumes: []
 
   temporal-worker:
@@ -44,6 +56,10 @@ services:
       DEBUG: "false"
       LOG_LEVEL: info
       USE_POSTGRES_CHECKPOINTER: "true"
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
     volumes: []
 
   frontend:

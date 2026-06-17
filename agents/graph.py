@@ -16,6 +16,7 @@ from agents.base import BaseAgent
 from agents.ingestion_agent import extract_invoice_node
 from agents.matching_agent import check_fraud_node, match_vendor_node
 from agents.state import FinFlowState, min_confidence_score
+from core.observability import trace_agent_step
 from langgraph.types import interrupt
 
 EXTRACTION_CONFIDENCE_THRESHOLD = 0.75
@@ -41,6 +42,7 @@ def reset_invoice_graph() -> None:
     _invoice_graph = None
 
 
+@trace_agent_step("invoice")
 async def validate_node(state: FinFlowState) -> dict:
     update = _agent.log_step(state, "validate")
     extracted = state.get("extracted_data") or {}
@@ -61,6 +63,7 @@ async def validate_node(state: FinFlowState) -> dict:
     return {**update, "requires_human_review": False, "review_reason": "", "error": ""}
 
 
+@trace_agent_step("invoice")
 async def human_review_node(state: FinFlowState) -> dict:
     update = _agent.log_step(state, "human_review")
 
@@ -92,6 +95,7 @@ async def human_review_node(state: FinFlowState) -> dict:
     }
 
 
+@trace_agent_step("invoice")
 async def schedule_payment_node(state: FinFlowState) -> dict:
     from agents.payment_agent import enrich_payment_metadata_node
 

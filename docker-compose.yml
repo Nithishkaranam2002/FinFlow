@@ -26,6 +26,10 @@ x-worker-base: &worker-base
     LOG_LEVEL: debug
     CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8088
     USE_POSTGRES_CHECKPOINTER: "false"
+    LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+    LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+    LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
+    LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
   volumes:
     - .:/app
     - api_venv:/app/.venv
@@ -340,6 +344,10 @@ services:
       LOG_LEVEL: debug
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8088
       USE_POSTGRES_CHECKPOINTER: "false"
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://us.cloud.langfuse.com}}
     volumes:
       - .:/app
       - api_venv:/app/.venv

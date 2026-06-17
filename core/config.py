@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field, HttpUrl, field_validator, model_validator
+from pydantic import AliasChoices, Field, HttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from core.secrets import get_secret
@@ -76,10 +76,18 @@ class Settings(BaseSettings):
     premium_model: str = "gpt-4o"
     fallback_model: str = "gpt-4o-mini"
 
-    # Langfuse observability
+    # Langfuse observability (LANGFUSE_BASE_URL is an alias for LANGFUSE_HOST)
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
-    langfuse_host: HttpUrl = "https://cloud.langfuse.com"
+    langfuse_host: HttpUrl = Field(
+        default="https://cloud.langfuse.com",
+        validation_alias=AliasChoices(
+            "LANGFUSE_HOST",
+            "LANGFUSE_BASE_URL",
+            "langfuse_host",
+            "langfuse_base_url",
+        ),
+    )
 
     # Mem0
     mem0_api_key: str = ""
@@ -125,6 +133,10 @@ class Settings(BaseSettings):
             for broker in self.kafka_bootstrap_servers.split(",")
             if broker.strip()
         ]
+
+    @property
+    def langfuse_enabled(self) -> bool:
+        return bool(self.langfuse_public_key and self.langfuse_secret_key)
 
     @property
     def allowed_cors_origins(self) -> list[str]:
