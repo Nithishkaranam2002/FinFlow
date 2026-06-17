@@ -33,6 +33,6 @@ test.describe('FinFlow smoke', () => {
 
     await page.getByRole('link', { name: 'Reconciliation' }).click()
     await expect(page).toHaveURL('/reconciliation')
-    await expect(page.getByRole('heading', { name: 'Reconciliation' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Bank Reconciliation' })).toBeVisible()
   })
 })
