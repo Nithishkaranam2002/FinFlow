@@ -1,0 +1,21 @@
+name: finflow-ci
+
+services:
+  api:
+    environment:
+      USE_POSTGRES_CHECKPOINTER: "false"
+    command:
+      [
+        "uvicorn",
+        "api.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--workers",
+        "1",
+      ]
+
+  temporal-worker:
+    environment:
+      USE_POSTGRES_CHECKPOINTER: "false"

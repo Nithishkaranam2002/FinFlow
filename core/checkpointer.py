@@ -11,20 +11,29 @@ from core.config import get_settings
 logger = structlog.get_logger(__name__)
 
 _checkpointer: Any | None = None
+_checkpointer_conn: Any | None = None
 _initialized = False
 
 
 async def init_checkpointer() -> None:
     """Initialize and migrate the LangGraph checkpoint store."""
-    global _checkpointer, _initialized
+    global _checkpointer, _checkpointer_conn, _initialized
     if _initialized:
         return
 
     settings = get_settings()
     if settings.use_postgres_checkpointer:
         from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+        from psycopg import AsyncConnection
+        from psycopg.rows import dict_row
 
-        saver = AsyncPostgresSaver.from_conn_string(settings.database_sync_url)
+        _checkpointer_conn = await AsyncConnection.connect(
+            settings.database_sync_url,
+            autocommit=True,
+            prepare_threshold=0,
+            row_factory=dict_row,
+        )
+        saver = AsyncPostgresSaver(conn=_checkpointer_conn)
         await saver.setup()
         _checkpointer = saver
         logger.info("langgraph_checkpointer_initialized", backend="postgres")
@@ -48,10 +57,9 @@ def get_checkpointer() -> Any:
 
 async def close_checkpointer() -> None:
     """Release checkpointer resources on shutdown."""
-    global _checkpointer, _initialized
-    if _checkpointer is not None and hasattr(_checkpointer, "conn"):
-        conn = getattr(_checkpointer, "conn", None)
-        if conn is not None and hasattr(conn, "close"):
-            await conn.close()
+    global _checkpointer, _checkpointer_conn, _initialized
+    if _checkpointer_conn is not None:
+        await _checkpointer_conn.close()
     _checkpointer = None
+    _checkpointer_conn = None
     _initialized = False
