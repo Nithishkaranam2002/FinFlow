@@ -3,6 +3,7 @@ name: finflow-ci
 services:
   api:
     environment:
+      SECRET_KEY: ci-e2e-secret-key
       USE_POSTGRES_CHECKPOINTER: "false"
     command:
       [

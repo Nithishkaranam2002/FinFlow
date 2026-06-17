@@ -109,6 +109,8 @@ jobs:
   e2e-smoke:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-build]
+    env:
+      SECRET_KEY: ci-e2e-secret-key
 
     steps:
       - uses: actions/checkout@v4
@@ -116,7 +118,6 @@ jobs:
       - name: Start stack
         run: |
           set -euo pipefail
-          export SECRET_KEY=ci-e2e-secret-key
           COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ci.yml"
 
           $COMPOSE up -d postgres redis zookeeper kafka qdrant minio
