@@ -26,9 +26,44 @@ const DEMO_INVOICES = [
 
 type InvoiceKey = (typeof DEMO_INVOICES)[number]['key']
 
+// Any email or URL host outside the reserved .example / .test domains is masked in every
+// screenshot, so seeded user addresses or a misread real-looking domain can never show up.
+const UNSAFE_EMAIL = /[\w.+-]+@(?![\w.-]*\.(?:example|test)\b)[\w-]+(?:\.[\w-]+)+/i
+const UNSAFE_URL = /https?:\/\/(?![^\s/]*\.(?:example|test)\b)[^\s/]+/i
+
+const MASK_ATTRIBUTE = 'data-screenshot-mask'
+
+/** Tag the element holding each unsafe text node. Matching per text node (not per container,
+ * whose text runs fields together) keeps the masks tight. */
+async function tagUnsafeContactText(page: Page) {
+  await page.evaluate(
+    ({ patterns, attribute }) => {
+      const regexes = patterns.map((source) => new RegExp(source, 'i'))
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const text = node.textContent ?? ''
+        if (regexes.some((regex) => regex.test(text))) node.parentElement?.setAttribute(attribute, '')
+      }
+    },
+    { patterns: [UNSAFE_EMAIL.source, UNSAFE_URL.source], attribute: MASK_ATTRIBUTE },
+  )
+}
+
 async function shot(page: Page, name: string, hide: Locator[] = []) {
   await page.waitForTimeout(800) // let charts and transitions settle
-  await page.screenshot({ path: path.join(SHOTS, `${name}.png`), mask: hide, maskColor: '#e2e8f0' })
+  await tagUnsafeContactText(page)
+  await page.screenshot({
+    path: path.join(SHOTS, `${name}.png`),
+    mask: [page.locator(`[${MASK_ATTRIBUTE}]`), ...hide],
+    maskColor: '#e2e8f0',
+  })
+}
+
+/** The value line of an "Extracted Data" field card, located by its label. */
+function extractedValue(page: Page, label: string): Locator {
+  return page
+    .getByText(label, { exact: true })
+    .locator('xpath=ancestor::div[1]/following-sibling::*[1]')
 }
 
 async function signIn(browser: Browser, email: string): Promise<Page> {
@@ -63,9 +98,10 @@ test('README screenshots', async ({ browser }) => {
   const anon = await (await browser.newContext()).newPage()
   await anon.goto('/login')
   await expect(anon.getByRole('heading', { name: 'Welcome to FinFlow' })).toBeVisible()
-  // The dev login page prints the seeded credentials; keep them out of the screenshot.
+  // The dev login page prints the seeded credentials, and the email placeholder is a real
+  // domain; keep both out of the screenshot.
   const devCredentials = anon.getByText('Local dev credentials').locator('..')
-  await shot(anon, '01-login', [devCredentials])
+  await shot(anon, '01-login', [devCredentials, anon.getByLabel('Email')])
 
   // Upload the 4 demo invoices as the AP clerk, through the Invoices page.
   const clerk = await signIn(browser, 'clerk@acmecorp.com')
@@ -99,7 +135,11 @@ test('README screenshots', async ({ browser }) => {
   // 4. Scanned invoice with the "Why this needs attention" box
   await clerk.goto(`/invoices/${ids.scanned}`)
   await expect(clerk.getByText('Why this needs attention')).toBeVisible()
-  await shot(clerk, '04-scanned-invoice-attention')
+  // Contact fields read from the noisy scan can come out as a real-looking domain.
+  await shot(clerk, '04-scanned-invoice-attention', [
+    extractedValue(clerk, 'Vendor Email'),
+    extractedValue(clerk, 'Notes'),
+  ])
 
   // 5. Just-under-limit invoice: fraud flag card in view
   await clerk.goto(`/invoices/${ids.threshold}`)
@@ -127,14 +167,25 @@ test('README screenshots', async ({ browser }) => {
     await controller.goto('/integrations')
     await expect(controller.getByText('Last delivery failed')).toBeVisible({ timeout: 30_000 })
     await shot(controller, '07-integrations-failed')
+    // Keep n8n down until the 10s automatic retry has also failed; the next one is 30s later,
+    // which leaves a clear window for the manual "Retry now".
+    await expect
+      .poll(
+        async () =>
+          (await (await controller.request.get('/api/v1/integrations/webhook/deliveries')).json())[0]
+            ?.attempts,
+        { timeout: 60_000, intervals: [1_000] },
+      )
+      .toBeGreaterThanOrEqual(2)
   } finally {
     execSync(`docker start ${N8N_CONTAINER}`)
   }
   await expect.poll(n8nHealthy, { timeout: 90_000, intervals: [2_000] }).toBe(true)
   await controller.waitForTimeout(4_000) // n8n registers webhooks just after it reports healthy
-  const retry = controller.getByRole('button', { name: 'Retry now' })
-  if (await retry.isVisible()) await retry.click() // an automatic retry may have won the race
-  await expect(controller.getByText('Healthy')).toBeVisible({ timeout: 60_000 })
+  await controller.reload()
+  await controller.getByRole('button', { name: 'Retry now' }).click()
+  await expect(controller.getByText('Healthy')).toBeVisible({ timeout: 30_000 })
+  await expect(controller.getByText(/^Delivered invoice/)).toBeVisible()
   await shot(controller, '08-integrations-recovered')
 
   // 9. Reconciliation results for the demo bank statement
