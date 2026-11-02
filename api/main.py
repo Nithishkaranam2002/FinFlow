@@ -15,7 +15,15 @@ from api.middleware.rate_limit import RateLimitMiddleware
 from api.middleware.request_id import RequestIDMiddleware
 from api.middleware.security_headers import SecurityHeadersMiddleware
 from api.middleware.tenant_context import TenantContextMiddleware
-from api.routes import auth, dashboard, invoices, payments, reconciliation, vendors
+from api.routes import (
+    auth,
+    dashboard,
+    integrations,
+    invoices,
+    payments,
+    reconciliation,
+    vendors,
+)
 from core.checkpointer import close_checkpointer, init_checkpointer
 from core.config import get_settings
 from core.database import engine, get_db
@@ -150,6 +158,7 @@ app.include_router(
 )
 app.include_router(vendors.router, prefix="/api/v1/vendors", tags=["vendors"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
+app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["integrations"])
 
 
 @app.get("/metrics")

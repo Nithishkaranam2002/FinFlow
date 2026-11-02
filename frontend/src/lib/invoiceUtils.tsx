@@ -142,6 +142,10 @@ export function canApproveInvoice(user: User | null, invoice: Invoice): boolean 
   return ROLE_LEVEL[user.role] >= ROLE_LEVEL[required]
 }
 
+export function hasMinRole(user: User | null, minRole: UserRole): boolean {
+  return user ? ROLE_LEVEL[user.role] >= ROLE_LEVEL[minRole] : false
+}
+
 export function showsApprovalSection(invoice: Invoice): boolean {
   if (['pending_approval', 'review_required'].includes(invoice.status)) return true
   return invoice.status === 'matched' && Boolean(invoice.flags?.required_role)

@@ -6,7 +6,6 @@ import asyncio
 import uuid
 from typing import Any
 
-import httpx
 import structlog
 from sqlalchemy import select
 
@@ -15,10 +14,11 @@ from core.database import async_session_factory
 from models.invoice import Invoice
 from models.user import User
 from models.vendor import Vendor
+from services.webhook_deliveries import create_delivery, deliver_with_retries
 
 logger = structlog.get_logger(__name__)
 
-WEBHOOK_TIMEOUT_SECONDS = 3.0
+APPROVAL_EVENT = "invoice.approved"
 _pending_tasks: set[asyncio.Task[None]] = set()
 
 
@@ -41,7 +41,7 @@ async def _build_payload(
 
     extracted = invoice.extracted_data or {}
     return {
-        "event": "invoice.approved",
+        "event": APPROVAL_EVENT,
         "invoice_id": str(invoice.id),
         "tenant_id": str(invoice.tenant_id),
         "vendor": {
@@ -69,7 +69,7 @@ async def _build_payload(
 async def send_approval_webhook(
     *, invoice_id: str, tenant_id: str, approver_id: str | None, approver_role: str, approved_at: str
 ) -> None:
-    """POST the approved invoice to APPROVAL_WEBHOOK_URL. Never raises."""
+    """Record a delivery for the approved invoice and send it, retrying on failure. Never raises."""
     url = get_settings().approval_webhook_url
     if not url:
         return
@@ -84,15 +84,14 @@ async def send_approval_webhook(
         if payload is None:
             logger.warning("approval_webhook_invoice_not_found", invoice_id=invoice_id)
             return
-        async with httpx.AsyncClient(timeout=WEBHOOK_TIMEOUT_SECONDS) as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-        logger.info(
-            "approval_webhook_sent",
+        delivery_id = await create_delivery(
+            tenant_id=tenant_id,
             invoice_id=invoice_id,
-            status_code=response.status_code,
-            response=response.text[:500],
+            event=APPROVAL_EVENT,
+            target_url=url,
+            payload=payload,
         )
+        await deliver_with_retries(delivery_id)
     except Exception as exc:
         logger.warning("approval_webhook_failed", invoice_id=invoice_id, error=repr(exc))
 

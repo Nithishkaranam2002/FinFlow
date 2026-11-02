@@ -223,3 +223,33 @@ export interface AuditLogEntry {
   ip_address: string | null
   created_at: string
 }
+
+export type WebhookDeliveryStatus = 'pending' | 'sent' | 'failed'
+
+export interface WebhookDelivery {
+  id: string
+  invoice_id: string
+  invoice_number: string | null
+  vendor_name: string | null
+  event: string
+  target_url: string
+  status: WebhookDeliveryStatus
+  attempts: number
+  last_status_code: number | null
+  last_error: string | null
+  created_at: string
+  last_attempt_at: string | null
+  next_retry_at: string | null
+  sent_at: string | null
+}
+
+export interface WebhookSummary {
+  configured: boolean
+  target_url: string | null
+  last_status: WebhookDeliveryStatus | null
+  last_delivery_at: string | null
+  last_error: string | null
+  next_retry_at: string | null
+  last_success_at: string | null
+  failures_24h: number
+}

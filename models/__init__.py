@@ -12,6 +12,7 @@ from models.reconciliation import (
 from models.tenant import Tenant
 from models.user import User, UserRole
 from models.vendor import Vendor
+from models.webhook_delivery import WebhookDelivery
 
 __all__ = [
     "AuditLog",
@@ -29,4 +30,5 @@ __all__ = [
     "User",
     "UserRole",
     "Vendor",
+    "WebhookDelivery",
 ]

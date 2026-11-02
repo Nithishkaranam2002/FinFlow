@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { SessionBootstrap } from './components/SessionBootstrap'
 import { DashboardPage } from './pages/Dashboard'
 import { InvoiceDetailPage } from './pages/InvoiceDetail'
+import { IntegrationsPage } from './pages/Integrations'
 import { InvoicesPage } from './pages/Invoices'
 import { LoginPage } from './pages/Login'
 import { ReconciliationPage } from './pages/Reconciliation'
@@ -52,6 +53,12 @@ export default function App() {
           }
         >
           <Route index element={<ReconciliationPage />} />
+        </Route>
+        <Route
+          path="/integrations"
+          element={<Layout title="Integrations" subtitle="Outbound connections and delivery history" />}
+        >
+          <Route index element={<IntegrationsPage />} />
         </Route>
         <Route path="/settings" element={<Layout title="Settings" subtitle="Account preferences" />}>
           <Route index element={<SettingsPage />} />

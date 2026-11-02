@@ -4,21 +4,32 @@ import {
   GitCompareArrows,
   LayoutDashboard,
   LogOut,
+  Plug,
   Settings,
   Sparkles,
 } from 'lucide-react'
 import { logout } from '../../api/client'
+import { hasMinRole } from '../../lib/invoiceUtils'
 import { useAuthStore } from '../../store/authStore'
+import type { UserRole } from '../../types'
 
-const navItems = [
+const navItems: Array<{
+  to: string
+  label: string
+  icon: typeof Settings
+  end?: boolean
+  minRole?: UserRole
+}> = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/reconciliation', label: 'Reconciliation', icon: GitCompareArrows },
+  { to: '/integrations', label: 'Integrations', icon: Plug, minRole: 'controller' },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export function Sidebar() {
   const user = useAuthStore((s) => s.user)
+  const visibleNavItems = navItems.filter(({ minRole }) => !minRole || hasMinRole(user, minRole))
 
   async function handleLogout() {
     await logout()
@@ -40,7 +51,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-5">
-        {navItems.map(({ to, label, icon: Icon, end }) => (
+        {visibleNavItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
