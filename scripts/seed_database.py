@@ -42,6 +42,15 @@ ROLE_EMAIL_PREFIX: dict[UserRole, str] = {
     UserRole.AUDITOR: "auditor",
 }
 
+# Invented electrical suppliers used by scripts/make_demo_invoices.py (Acme Corp only).
+DEMO_VENDOR_NAMESPACE = uuid.UUID("6f1d2c3a-8b4e-4f5a-9c7d-2e1b0a9f8e7d")
+ACME_DEMO_VENDORS: list[dict[str, object]] = [
+    {"name": "Kestrel Ridge Electrical Supply", "email": "ar@kestrelridge-electric.example", "payment_terms_days": 30},
+    {"name": "Ambervolt Wire & Conduit", "email": "billing@ambervolt-wire.example", "payment_terms_days": 30},
+    {"name": "Northpine Electric Distributors", "email": "invoices@northpine-electric.example", "payment_terms_days": 45},
+    {"name": "Halvorsen-Teague Lighting & Power", "email": "ar@halvorsen-teague.example", "payment_terms_days": 30},
+]
+
 
 @dataclass(frozen=True)
 class TestUserCredential:
@@ -208,6 +217,27 @@ async def seed_database(
                 )
             )
             counts["vendors"] += 1
+
+        acme_tenant_id = next(
+            (uuid.UUID(t["id"]) for t in payload["tenants"] if t["name"] == "Acme Corp"),
+            None,
+        )
+        if acme_tenant_id:
+            for demo_vendor in ACME_DEMO_VENDORS:
+                session.add(
+                    Vendor(
+                        id=uuid.uuid5(DEMO_VENDOR_NAMESPACE, str(demo_vendor["name"])),
+                        tenant_id=acme_tenant_id,
+                        name=str(demo_vendor["name"]),
+                        email=str(demo_vendor["email"]),
+                        payment_terms_days=int(demo_vendor["payment_terms_days"]),
+                        total_invoices=0,
+                        total_paid=Decimal("0.00"),
+                        risk_score=0.0,
+                        is_active=True,
+                    )
+                )
+                counts["vendors"] += 1
 
         await session.flush()
 
