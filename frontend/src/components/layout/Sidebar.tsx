@@ -3,6 +3,7 @@ import {
   FileText,
   GitCompareArrows,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Plug,
   Settings,
@@ -24,6 +25,7 @@ const navItems: Array<{
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/reconciliation', label: 'Reconciliation', icon: GitCompareArrows },
   { to: '/integrations', label: 'Integrations', icon: Plug, minRole: 'controller' },
+  { to: '/help', label: 'Help', icon: LifeBuoy },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 

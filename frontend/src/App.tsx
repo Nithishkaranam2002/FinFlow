@@ -3,6 +3,7 @@ import { Layout } from './components/layout/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { SessionBootstrap } from './components/SessionBootstrap'
 import { DashboardPage } from './pages/Dashboard'
+import { HelpPage } from './pages/Help'
 import { InvoiceDetailPage } from './pages/InvoiceDetail'
 import { IntegrationsPage } from './pages/Integrations'
 import { InvoicesPage } from './pages/Invoices'
@@ -59,6 +60,9 @@ export default function App() {
           element={<Layout title="Integrations" subtitle="Outbound connections and delivery history" />}
         >
           <Route index element={<IntegrationsPage />} />
+        </Route>
+        <Route path="/help" element={<Layout title="Help" subtitle="How to use FinFlow" />}>
+          <Route index element={<HelpPage />} />
         </Route>
         <Route path="/settings" element={<Layout title="Settings" subtitle="Account preferences" />}>
           <Route index element={<SettingsPage />} />
