@@ -160,12 +160,15 @@ async def list_invoices(
     vendor_id: uuid.UUID | None = Query(default=None),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
+    invoice_number: str | None = Query(default=None, max_length=64),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> InvoiceListResponse:
     filters = [Invoice.tenant_id == current_user.tenant_id]
     if status_filter:
         filters.append(Invoice.status == status_filter)
+    if invoice_number:
+        filters.append(func.lower(Invoice.invoice_number) == invoice_number.strip().lower())
     if vendor_id:
         filters.append(Invoice.vendor_id == vendor_id)
     if date_from:

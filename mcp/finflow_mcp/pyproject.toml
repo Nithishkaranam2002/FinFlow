@@ -1,0 +1,19 @@
+[project]
+name = "finflow-mcp"
+version = "0.1.0"
+description = "Read-only MCP server that lets Claude Desktop answer questions about FinFlow invoices"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=2.3.0,<3",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+finflow-mcp = "finflow_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["finflow_mcp"]
