@@ -38,6 +38,7 @@ def build_state_from_invoice(invoice: Invoice, *, skip_extraction: bool = True) 
         "overall_confidence": invoice.extraction_confidence,
         "vendor_id": str(invoice.vendor_id),
         "thread_id": str(invoice.id),
+        "math_issues": flags.get("math_issues") or [],
     }
     return {
         "invoice_id": str(invoice.id),

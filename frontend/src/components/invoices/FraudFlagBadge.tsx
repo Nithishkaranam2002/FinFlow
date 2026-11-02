@@ -1,3 +1,4 @@
+import { fraudFlagLabel } from '../../lib/invoiceUtils'
 import type { FraudFlag } from '../../types'
 
 const severityCardStyles: Record<FraudFlag['severity'], string> = {
@@ -28,7 +29,7 @@ export function FraudFlagBadge({ flag }: { flag: FraudFlag }) {
     >
       <span className="font-semibold">{flag.severity}</span>
       <span className="opacity-70">·</span>
-      <span>{flag.type.replace(/_/g, ' ')}</span>
+      <span title={flag.type}>{fraudFlagLabel(flag.type)}</span>
     </span>
   )
 }
@@ -40,7 +41,9 @@ export function FraudFlagCard({ flag }: { flag: FraudFlag }) {
         <p className={`text-xs font-bold uppercase tracking-wide ${severityTextStyles[flag.severity]}`}>
           {flag.severity}
         </p>
-        <p className="text-xs font-medium text-muted">{flag.type.replace(/_/g, ' ')}</p>
+        <p className="text-xs font-medium text-muted" title={flag.type}>
+          {fraudFlagLabel(flag.type)}
+        </p>
       </div>
       <p className={`mt-2 text-sm ${severityTextStyles[flag.severity]}`}>{flag.description}</p>
     </article>

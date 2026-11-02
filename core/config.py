@@ -102,6 +102,7 @@ class Settings(BaseSettings):
     email_from: str = "noreply@finflow.dev"
     app_base_url: str = "http://localhost:8000"
     slack_webhook_url: str = ""
+    approval_webhook_url: str = ""
 
     # Qdrant
     qdrant_url: str = "http://localhost:6333"

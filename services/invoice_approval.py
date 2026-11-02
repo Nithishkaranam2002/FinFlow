@@ -11,6 +11,7 @@ from sqlalchemy import select
 from core.database import async_session_factory
 from core.tenant import set_current_tenant_id
 from models.invoice import Invoice, InvoiceStatus
+from services.approval_webhook import schedule_approval_webhook
 from services.audit import log_audit_event
 
 logger = structlog.get_logger(__name__)
@@ -49,12 +50,13 @@ async def record_approval_decision(
             raise ValueError(f"Invoice not found: {invoice_id}")
 
         old_status = invoice.status.value
+        decided_at = datetime.now(timezone.utc).isoformat()
         invoice.status = invoice_status
         invoice.flags = {
             **(invoice.flags or {}),
             "approver_id": approver_id,
             "approval_notes": notes,
-            "approval_decision_at": datetime.now(timezone.utc).isoformat(),
+            "approval_decision_at": decided_at,
         }
 
         await log_audit_event(
@@ -82,4 +84,12 @@ async def record_approval_decision(
         approver_id=approver_id,
         via="direct",
     )
+    if invoice_status == InvoiceStatus.APPROVED:
+        schedule_approval_webhook(
+            invoice_id=invoice_id,
+            tenant_id=tenant_id,
+            approver_id=approver_id,
+            approver_role=approver_role,
+            approved_at=decided_at,
+        )
     return invoice_status

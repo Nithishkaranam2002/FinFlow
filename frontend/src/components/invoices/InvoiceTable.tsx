@@ -8,19 +8,16 @@ import {
   RiskScoreBar,
   StatusBadge,
 } from '../../lib/utils'
+import { STATUS_LABELS } from '../../lib/invoiceUtils'
 import { SlideOver } from '../ui/SlideOver'
 import { InvoiceDetailPanel } from './InvoiceDetail'
 
 const STATUS_OPTIONS: Array<{ value: '' | InvoiceStatus; label: string }> = [
   { value: '', label: 'All statuses' },
-  { value: 'received', label: 'Received' },
-  { value: 'extracting', label: 'Extracting' },
-  { value: 'review_required', label: 'Review Required' },
-  { value: 'matched', label: 'Matched' },
-  { value: 'pending_approval', label: 'Pending Approval' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'paid', label: 'Paid' },
+  ...(Object.keys(STATUS_LABELS) as InvoiceStatus[]).map((value) => ({
+    value,
+    label: STATUS_LABELS[value],
+  })),
 ]
 
 interface InvoiceTableProps {

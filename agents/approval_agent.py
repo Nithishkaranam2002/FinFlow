@@ -20,6 +20,7 @@ from models.invoice import Invoice, InvoiceStatus
 from models.tenant import Tenant
 from models.user import User, UserRole
 from services.approval_policy import resolve_required_role
+from services.approval_webhook import schedule_approval_webhook
 from services.audit import log_audit_event
 from services.notifications import (
     build_approval_payload,
@@ -74,6 +75,8 @@ async def route_approval_node(state: FinFlowState) -> dict:
     required_role, auto_approve = resolve_required_role(
         amount, fraud_flags, tenant_config
     )
+    if (state.get("metadata") or {}).get("math_issues"):
+        auto_approve = False
 
     metadata = {
         **(state.get("metadata") or {}),
@@ -101,6 +104,14 @@ async def route_approval_node(state: FinFlowState) -> dict:
                 new_value={"approval_status": "approved", "auto_approve": True},
             )
             await db.commit()
+
+        schedule_approval_webhook(
+            invoice_id=state["invoice_id"],
+            tenant_id=state["tenant_id"],
+            approver_id=None,
+            approver_role="system (auto-approved)",
+            approved_at=datetime.now(timezone.utc).isoformat(),
+        )
 
         return {
             **update,

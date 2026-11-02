@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Invoice, InvoiceStatus, User, UserRole } from '../types'
+import type { FraudFlag, Invoice, InvoiceStatus, User, UserRole } from '../types'
 
 const ROLE_LEVEL: Record<UserRole, number> = {
   ap_clerk: 1,
@@ -17,6 +17,106 @@ export const STATUS_STYLES: Record<InvoiceStatus, string> = {
   approved: 'bg-emerald-100 text-emerald-800',
   rejected: 'bg-red-100 text-red-800',
   paid: 'bg-teal-100 text-teal-800',
+}
+
+export const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  received: 'Received',
+  extracting: 'Reading invoice',
+  review_required: 'Review Required',
+  matched: 'Matched',
+  pending_approval: 'Pending Approval',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  paid: 'Paid',
+}
+
+const FRAUD_FLAG_LABELS: Record<string, string> = {
+  THRESHOLD_GAMING: 'Just under approval limit',
+  POTENTIAL_DUPLICATE: 'Possible duplicate',
+  AMOUNT_ANOMALY: 'Unusual amount for vendor',
+  HIGH_VELOCITY: 'Many invoices in a short time',
+  BANK_ACCOUNT_RECENTLY_CHANGED: 'Bank details recently changed',
+  UNKNOWN_VENDOR: 'Unknown vendor',
+}
+
+export function fraudFlagLabel(type: string): string {
+  return FRAUD_FLAG_LABELS[type] ?? type.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
+}
+
+// Same fields the backend weighs for overall extraction confidence.
+const ATTENTION_FIELD_LABELS: Record<string, string> = {
+  invoice_number: 'invoice number',
+  vendor_name: 'vendor name',
+  total_amount: 'total amount',
+  due_date: 'due date',
+  line_items: 'line items',
+}
+
+function wholeDollars(value: unknown): string {
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return 'approval'
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+function describeFraudFlag(flag: FraudFlag): string {
+  const details = flag as FraudFlag & Record<string, unknown>
+  switch (flag.type) {
+    case 'THRESHOLD_GAMING':
+      return `Amount is just under the ${wholeDollars(details.threshold_amount)} approval limit, a common way to avoid senior approval`
+    case 'POTENTIAL_DUPLICATE':
+      return `Looks like a duplicate of invoice ${String(details.matched_invoice_number ?? 'already on file')}`
+    case 'AMOUNT_ANOMALY':
+      return `Amount is unusual for this vendor (${flag.description})`
+    case 'HIGH_VELOCITY':
+      return `Many invoices from this vendor in a short time (${flag.description})`
+    case 'BANK_ACCOUNT_RECENTLY_CHANGED':
+      return 'Vendor bank details changed recently, confirm them before paying'
+    case 'UNKNOWN_VENDOR':
+      return "Vendor name doesn't match any known vendor"
+    default:
+      return flag.description || fraudFlagLabel(flag.type)
+  }
+}
+
+/** Plain-English reasons an invoice needs a human look, built only from saved checks. */
+export function getAttentionReasons(invoice: Invoice): string[] {
+  const reasons: string[] = []
+  const flags = invoice.flags ?? {}
+
+  const scores = getConfidenceScores(invoice)
+  const unsure = Object.keys(ATTENTION_FIELD_LABELS).filter(
+    (key) => key in scores && scores[key] < 0.75,
+  )
+  if (unsure.length) {
+    reasons.push(`AI was not sure about: ${unsure.map((key) => ATTENTION_FIELD_LABELS[key]).join(', ')}`)
+  }
+
+  const fraudFlags = Array.isArray(flags.fraud_flags) ? (flags.fraud_flags as FraudFlag[]) : []
+  fraudFlags.forEach((flag) => reasons.push(describeFraudFlag(flag)))
+
+  if (Array.isArray(flags.math_issues)) {
+    ;(flags.math_issues as string[]).forEach((issue) => reasons.push(issue))
+  }
+
+  const awaitingDecision = ['pending_approval', 'review_required', 'matched'].includes(invoice.status)
+  if (awaitingDecision && flags.required_role === 'controller') {
+    const fraudEscalated = fraudFlags.some((flag) => ['HIGH', 'CRITICAL'].includes(flag.severity))
+    reasons.push(
+      fraudEscalated
+        ? 'Needs controller approval: a fraud check flagged this invoice'
+        : 'Needs controller approval: amount is above the approver limit',
+    )
+  }
+
+  if (!reasons.length && invoice.status === 'review_required') {
+    reasons.push(String(flags.review_reason || 'Flagged for manual review'))
+  }
+
+  return reasons
 }
 
 export function getRiskScore(invoice: Invoice): number | null {

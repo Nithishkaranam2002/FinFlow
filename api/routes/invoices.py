@@ -24,6 +24,7 @@ from schemas.invoice import (
 from services.invoice_pipeline import build_state_from_invoice, run_invoice_pipeline
 from services.audit import log_audit_event
 from services.extraction_quality import log_human_correction_score
+from services.invoice_math import check_invoice_math
 from services.invoice_documents import (
     build_invoice_kafka_payload,
     invoice_flags_for_upload,
@@ -34,6 +35,29 @@ from services.mem0_corrections import store_vendor_correction_pattern
 from services.temporal_dispatch import dispatch_invoice_processing, submit_approval_decision
 
 router = APIRouter(tags=["invoices"])
+
+LINE_ITEM_FIELD_LABELS = {
+    "description": "description",
+    "quantity": "quantity",
+    "unit_price": "unit price",
+    "total": "amount",
+}
+
+
+def _describe_field_changes(field: str, old: object, new: object) -> list[tuple[str, object, object]]:
+    """Break a correction into (label, from, to) entries; line items are compared line by line."""
+    if field != "line_items" or not isinstance(old, list) or not isinstance(new, list):
+        return [(field.replace("_", " "), old, new)] if old != new else []
+
+    changes: list[tuple[str, object, object]] = []
+    for index in range(max(len(old), len(new))):
+        old_line = old[index] if index < len(old) and isinstance(old[index], dict) else {}
+        new_line = new[index] if index < len(new) and isinstance(new[index], dict) else {}
+        for key, label in LINE_ITEM_FIELD_LABELS.items():
+            if str(old_line.get(key)) != str(new_line.get(key)):
+                changes.append((f"line {index + 1} {label}", old_line.get(key), new_line.get(key)))
+    return changes
+
 
 ALLOWED_CONTENT_TYPES = {
     "application/pdf",
@@ -515,6 +539,25 @@ async def correct_invoice_extraction(
         reason=payload.notes,
         ip_address=request.client.host if request.client else None,
     )
+    for field, new_field_value in payload.corrections.items():
+        for label, from_value, to_value in _describe_field_changes(
+            field, old_extracted.get(field), new_field_value
+        ):
+            await log_audit_event(
+                db,
+                tenant_id=current_user.tenant_id,
+                entity_type="invoice",
+                entity_id=invoice.id,
+                action="field_corrected",
+                actor_id=current_user.id,
+                actor_role=current_user.role.value,
+                old_value={"field": label, "value": from_value},
+                new_value={"field": label, "value": to_value},
+                reason=f"{current_user.email} changed {label} from {from_value} to {to_value}",
+                ip_address=request.client.host if request.client else None,
+            )
+
+    invoice.flags = {**(invoice.flags or {}), "math_issues": check_invoice_math(corrected)}
     await db.commit()
     await db.refresh(invoice)
     return invoice

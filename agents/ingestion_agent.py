@@ -29,6 +29,7 @@ from services.extraction import (
     prepare_document_for_vision,
 )
 from services.extraction_quality import persist_extraction_trace_metadata
+from services.invoice_math import MATH_MISMATCH_CONFIDENCE_CAP, check_invoice_math
 from services.mem0_corrections import fetch_vendor_correction_examples
 
 logger = structlog.get_logger(__name__)
@@ -409,6 +410,7 @@ async def _persist_invoice_extraction(
     overall_confidence: float,
     requires_human_review: bool,
     review_reason: str = "",
+    math_issues: list[str] | None = None,
 ) -> None:
     async with async_session_factory() as session:
         result = await session.execute(
@@ -444,6 +446,7 @@ async def _persist_invoice_extraction(
             "confidence_scores": confidence_scores,
             "requires_human_review": requires_human_review,
             "review_reason": review_reason,
+            "math_issues": math_issues or [],
         }
         await session.commit()
 
@@ -582,6 +585,14 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
     if requires_review:
         low_fields = low_confidence_fields(confidence_scores)
         review_reason_parts.append(f"Low extraction confidence: {', '.join(low_fields)}")
+    math_issues = check_invoice_math(extracted_data)
+    if math_issues:
+        requires_review = True
+        review_reason_parts.extend(math_issues)
+        overall_confidence = min(overall_confidence, MATH_MISMATCH_CONFIDENCE_CAP)
+        confidence_scores["total_amount"] = min(
+            confidence_scores.get("total_amount", 0.0), MATH_MISMATCH_CONFIDENCE_CAP
+        )
     review_reason = "; ".join(review_reason_parts)
 
     await _persist_invoice_extraction(
@@ -592,6 +603,7 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
         overall_confidence=overall_confidence,
         requires_human_review=requires_review,
         review_reason=review_reason,
+        math_issues=math_issues,
     )
 
     async with async_session_factory() as session:
@@ -640,6 +652,7 @@ async def extract_invoice_node(state: FinFlowState) -> dict:
             "vision_model": VISION_MODEL,
             "llm_gateway": True,
             "langfuse_trace_id": metrics.get("langfuse_trace_id"),
+            "math_issues": math_issues,
         },
     }
 

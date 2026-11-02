@@ -1,12 +1,13 @@
 import type { InvoiceStatus } from '../types'
-import { STATUS_STYLES } from './invoiceUtils'
+import { STATUS_LABELS, STATUS_STYLES } from './invoiceUtils'
 
 export function StatusBadge({ status }: { status: InvoiceStatus }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[status]}`}
+      title={status}
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}
     >
-      {status.replace(/_/g, ' ')}
+      {STATUS_LABELS[status] ?? status.replace(/_/g, ' ')}
     </span>
   )
 }

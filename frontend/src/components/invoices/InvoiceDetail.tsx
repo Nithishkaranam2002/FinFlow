@@ -20,6 +20,7 @@ import { listVendors } from '../../api/vendors'
 import { notifyError, notifySuccess } from '../../lib/toast'
 import {
   canApproveInvoice,
+  getAttentionReasons,
   getExtractedFields,
   getRiskScore,
   showsApprovalSection,
@@ -106,11 +107,12 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
   })
 
   const correctMutation = useMutation({
-    mutationFn: ({ field, value }: { field: string; value: string }) =>
+    mutationFn: ({ field, value }: { field: string; value: unknown }) =>
       correctExtraction(invoiceId, { [field]: value }),
     onSuccess: () => {
       setEditingField(null)
       void queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
+      void queryClient.invalidateQueries({ queryKey: ['invoice-audit', invoiceId] })
       void queryClient.invalidateQueries({ queryKey: ['invoices'] })
       onUpdated?.()
     },
@@ -142,6 +144,11 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
     (invoice.extracted_data?.vendor_name as string | undefined) ??
     invoice.vendor_id.slice(0, 8)
   const canApprove = canApproveInvoice(user, invoice)
+  const inReview = invoice.status === 'review_required'
+  const attentionReasons = getAttentionReasons(invoice)
+  const lineItems = Array.isArray(invoice.extracted_data?.line_items)
+    ? (invoice.extracted_data.line_items as Record<string, unknown>[])
+    : []
 
   return (
     <div className="space-y-6">
@@ -168,6 +175,25 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
           </div>
         ) : null}
       </header>
+
+      {attentionReasons.length ? (
+        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <h4 className="text-sm font-semibold">Why this needs attention</h4>
+          </div>
+          <ul className="mt-2 list-disc space-y-1 pl-6 text-sm">
+            {attentionReasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          All checks passed
+        </div>
+      )}
 
       <section>
         <h4 className="text-sm font-semibold text-slate-900">Extracted Data</h4>
@@ -231,7 +257,9 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
                         <p className="mt-1 text-sm font-medium text-slate-900">{field.value}</p>
                       )}
                     </div>
-                    {lowConfidence && !isEditing ? (
+                    {(lowConfidence ||
+                      (inReview && ['invoice_number', 'total_amount'].includes(field.key))) &&
+                    !isEditing ? (
                       <button
                         type="button"
                         title="Correct extraction"
@@ -252,6 +280,75 @@ export function InvoiceDetailPanel({ invoiceId, onUpdated }: InvoiceDetailPanelP
             <p className="text-sm text-muted">No extracted data available yet.</p>
           )}
         </div>
+        {inReview && lineItems.length ? (
+          <div className="mt-3 space-y-2">
+            {lineItems.map((line, index) => {
+              const key = `line_items.${index}`
+              const isEditing = editingField === key
+              return (
+                <div
+                  key={key}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-2"
+                >
+                  <div className="min-w-0 flex-1 text-sm">
+                    <p className="truncate text-slate-900">{String(line.description ?? '')}</p>
+                    <p className="text-xs text-muted">
+                      {String(line.quantity ?? '—')} x {String(line.unit_price ?? '—')}
+                    </p>
+                  </div>
+                  {isEditing ? (
+                    <div className="flex gap-2">
+                      <input
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="w-28 rounded-lg border border-border px-3 py-1.5 text-sm outline-none focus:border-primary-500"
+                      />
+                      <button
+                        type="button"
+                        disabled={correctMutation.isPending}
+                        onClick={() =>
+                          void correctMutation.mutateAsync({
+                            field: 'line_items',
+                            value: lineItems.map((item, i) =>
+                              i === index ? { ...item, total: editValue } : item,
+                            ),
+                          })
+                        }
+                        className="rounded-lg bg-primary-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-800 disabled:opacity-60"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingField(null)}
+                        className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted hover:bg-canvas"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium tabular-nums text-slate-900">
+                        {String(line.total ?? '—')}
+                      </span>
+                      <button
+                        type="button"
+                        title="Correct line amount"
+                        onClick={() => {
+                          setEditingField(key)
+                          setEditValue(String(line.total ?? ''))
+                        }}
+                        className="rounded-lg p-2 text-amber-700 hover:bg-amber-100"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : null}
       </section>
 
       <section>

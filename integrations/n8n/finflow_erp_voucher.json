@@ -1,0 +1,44 @@
+{
+  "id": "FfErpVoucher0001",
+  "name": "FinFlow approved invoice -> ERP AP voucher",
+  "active": false,
+  "nodes": [
+    {
+      "id": "6a1f3c2e-1d4b-4e8a-9b51-0c2f7a9d1e01",
+      "name": "FinFlow invoice approved",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "3f9b7c1a-52e4-4d2b-8c0e-7a6d5b4c3e21",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "finflow-invoice-approved",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "6a1f3c2e-1d4b-4e8a-9b51-0c2f7a9d1e02",
+      "name": "Map to ERP AP voucher",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0],
+      "parameters": {
+        "jsCode": "// Map the FinFlow approval payload into an ERP accounts-payable voucher.\n// Voucher number is derived from the FinFlow invoice id, so a retried webhook\n// produces the same voucher number instead of a duplicate posting.\nreturn $input.all().map((item) => {\n  const p = item.json.body ?? item.json;\n  const postedAt = new Date().toISOString();\n  const voucherNumber = `APV-${postedAt.slice(0, 10).replace(/-/g, '')}-${String(p.invoice_id).slice(0, 8).toUpperCase()}`;\n\n  return {\n    json: {\n      voucher_type: 'AP_INVOICE',\n      voucher_number: voucherNumber,\n      vendor: { id: p.vendor?.id, name: p.vendor?.name },\n      invoice_number: p.invoice_number,\n      invoice_date: p.invoice_date,\n      due_date: p.due_date,\n      currency: p.currency,\n      total: Number(p.total),\n      lines: (p.line_items || []).map((line, index) => ({\n        line: index + 1,\n        description: line.description,\n        quantity: Number(line.quantity),\n        unit_price: Number(line.unit_price),\n        amount: Number(line.total),\n      })),\n      approved_by: p.approved_by?.email ?? p.approved_by?.role,\n      source: { system: 'FinFlow', invoice_id: p.invoice_id },\n      posted_at: postedAt,\n    },\n  };\n});\n"
+      }
+    }
+  ],
+  "connections": {
+    "FinFlow invoice approved": {
+      "main": [[{ "node": "Map to ERP AP voucher", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": true
+  },
+  "pinData": {}
+}
